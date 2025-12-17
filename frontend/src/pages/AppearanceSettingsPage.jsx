@@ -19,25 +19,25 @@ export default function AppearanceSettingsPage() {
     applyAccentColor(savedAccent)
   }, [])
 
-    const handleThemeChange = (newTheme) => {
-      setTheme(newTheme)
-      localStorage.setItem("theme", newTheme)
-      
-      if (newTheme === "dark") {
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme)
+    localStorage.setItem("theme", newTheme)
+
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else if (newTheme === "light") {
+      document.documentElement.classList.remove("dark")
+    } else {
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+      if (isDark) {
         document.documentElement.classList.add("dark")
-      } else if (newTheme === "light") {
-        document.documentElement.classList.remove("dark")
       } else {
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-        if (isDark) {
-          document.documentElement.classList.add("dark")
-        } else {
-          document.documentElement.classList.remove("dark")
-        }
+        document.documentElement.classList.remove("dark")
       }
-      
-      applyAccentColor(accentColor)
     }
+
+    applyAccentColor(accentColor)
+  }
 
   const themeOptions = [
     { value: "light", icon: Sun, label: "Light", description: "Light theme" },
@@ -45,24 +45,24 @@ export default function AppearanceSettingsPage() {
     { value: "system", icon: Monitor, label: "System", description: "Follow system setting" },
   ]
 
-    const applyAccentColor = (color) => {
-      const colorMap = {
-        blue: { light: "221.2 83.2% 53.3%", dark: "217.2 91.2% 59.8%" },
-        green: { light: "142.1 76.2% 36.3%", dark: "142.1 70.6% 45.3%" },
-        purple: { light: "262.1 83.3% 57.8%", dark: "263.4 70% 50.4%" },
-        pink: { light: "330.4 81.2% 60.4%", dark: "330.4 85% 60%" },
-        orange: { light: "24.6 95% 53.1%", dark: "20.5 90.2% 48.2%" },
-        red: { light: "0 72.2% 50.6%", dark: "0 72.2% 60.6%" },
-      }
-      
-      const colors = colorMap[color]
-      if (colors) {
-        const isDark = document.documentElement.classList.contains("dark")
-        const colorValue = isDark ? colors.dark : colors.light
-        document.documentElement.style.setProperty("--primary", colorValue)
-        document.documentElement.style.setProperty("--ring", colorValue)
-      }
+  const applyAccentColor = (color) => {
+    const colorMap = {
+      blue: { light: "221.2 83.2% 53.3%", dark: "217.2 91.2% 59.8%" },
+      green: { light: "142.1 76.2% 36.3%", dark: "142.1 70.6% 45.3%" },
+      purple: { light: "262.1 83.3% 57.8%", dark: "263.4 70% 50.4%" },
+      pink: { light: "330.4 81.2% 60.4%", dark: "330.4 85% 60%" },
+      orange: { light: "24.6 95% 53.1%", dark: "20.5 90.2% 48.2%" },
+      red: { light: "0 72.2% 50.6%", dark: "0 72.2% 60.6%" },
     }
+
+    const colors = colorMap[color]
+    if (colors) {
+      const isDark = document.documentElement.classList.contains("dark")
+      const colorValue = isDark ? colors.dark : colors.light
+      document.documentElement.style.setProperty("--primary", colorValue)
+      document.documentElement.style.setProperty("--ring", colorValue)
+    }
+  }
 
   const handleAccentColorChange = (color) => {
     setAccentColor(color)
@@ -103,11 +103,10 @@ export default function AppearanceSettingsPage() {
               <button
                 key={option.value}
                 onClick={() => handleThemeChange(option.value)}
-                className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-colors ${
-                  theme === option.value
+                className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-colors ${theme === option.value
                     ? "bg-primary/10 border-primary"
                     : "bg-card border-border hover:bg-accent"
-                }`}
+                  }`}
               >
                 <option.icon className="h-5 w-5" />
                 <div className="flex-1 text-left">
@@ -133,9 +132,8 @@ export default function AppearanceSettingsPage() {
                 <button
                   key={color.value}
                   onClick={() => handleAccentColorChange(color.value)}
-                  className={`h-12 w-12 rounded-full ${color.color} relative ${
-                    accentColor === color.value ? "ring-2 ring-offset-2 ring-primary" : ""
-                  }`}
+                  className={`h-12 w-12 rounded-full ${color.color} relative ${accentColor === color.value ? "ring-2 ring-offset-2 ring-primary" : ""
+                    }`}
                 >
                   {accentColor === color.value && (
                     <div className="absolute inset-0 flex items-center justify-center">
