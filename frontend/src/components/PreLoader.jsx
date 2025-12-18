@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
-
+import { motion } from 'framer-motion'
 const PreLoader = ({ onComplete }) => {
   const containerRef = useRef(null)
   const [percentage, setPercentage] = useState(0)
@@ -8,7 +8,7 @@ const PreLoader = ({ onComplete }) => {
 
   const textCircles = [
     {
-      text: "VISHAL VALVI • FULL STACK DEVELOPER • CREATIVE DESIGNER • ",
+      text: "FULL STACK DEVELOPER • COMPUTER ENGINEER • CREATIVE DESIGNER •",
       radius: 160,
       duration: 15,
       direction: 1
@@ -132,17 +132,31 @@ const PreLoader = ({ onComplete }) => {
         {/* Center Percentage */}
         <div className="percentage-text flex flex-col items-center justify-center z-10">
           <span
-            className="text-5xl sm:text-7xl font-light text-white tracking-tighter"
+            className="text-2xl font-light text-white tracking-tighter"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
             {percentage}%
           </span>
-          <span
-            className="text-[10px] uppercase tracking-[0.3em] text-white/40 mt-2"
+          <motion.div initial={{ opacity: 0 }}
+            animate={{ opacity: 1, }}
+            transition={{ delay: 0.3 }}
+            className='text-[6px] tracking-[0.3em] text-white/40 mt-2'
+          >MADE BY</motion.div>
+          <motion.div initial={{ opacity: 0 }}
+            animate={{ opacity: 1, }}
+            transition={{ delay: 0.7 }}
+            className="text-[10px] uppercase tracking-[0.3em] text-white/50"
             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            Loading Experience
-          </span>
+            VISHAL VALVI
+          </motion.div>
+          <motion.div initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 0.5, width: 50 }}
+            // whileInView={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className='mt-[2px] w-6 h-0.5 bg-white/30 rounded-full'>
+
+          </motion.div>
         </div>
 
         {/* Aesthetic background elements */}
