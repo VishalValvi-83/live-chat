@@ -40,23 +40,23 @@ export const login = async (req, res) => {
         );
 
         if (rows.length === 0) {
-            return res.status(400).json({success: false, message: "Invalid email or password" });
+            return res.status(400).json({ success: false, message: "Invalid email or password" });
         }
 
         const user = rows[0];
 
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
-            return res.status(400).json({success: false, message: "Invalid email or password" });
+            return res.status(400).json({ success: false, message: "Invalid email or password" });
         }
 
         const token = jwt.sign(
             { id: user.id, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: "7d" }
+            { expiresIn: process.env.JWT_EXPIRES_IN }
         );
 
-        res.json({ message: "Login successful", data: user , token });
+        res.json({ message: "Login successful", data: user, token });
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: "Internal Server Error" });
