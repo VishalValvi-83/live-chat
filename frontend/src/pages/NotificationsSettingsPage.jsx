@@ -59,12 +59,14 @@ export default function NotificationsSettingsPage() {
               </div>
               <button
                 onClick={() => handleToggle(option.key)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${settings[option.key] ? "bg-primary" : "bg-muted"
-                  }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  settings[option.key] ? "bg-primary" : "bg-muted"
+                }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings[option.key] ? "translate-x-6" : "translate-x-1"
-                    }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    settings[option.key] ? "translate-x-6" : "translate-x-1"
+                  }`}
                 />
               </button>
             </div>

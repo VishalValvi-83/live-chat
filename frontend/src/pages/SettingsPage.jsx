@@ -48,20 +48,20 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <div className="space-y-2">
-            {settingsItems.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => item.path ? navigate(item.path) : alert("Coming soon!")}
-                className="w-full flex items-center gap-4 p-4 bg-card rounded-lg border border-border hover:bg-accent transition-colors"
-              >
-                <item.icon className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1 text-left">
-                  <h3 className="font-medium">{item.label}</h3>
-                  <p className="text-sm text-muted-foreground">{item.description}</p>
-                </div>
-              </button>
-            ))}
+            <div className="space-y-2">
+              {settingsItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={() => item.path ? navigate(item.path) : alert("Coming soon!")}
+                  className="w-full flex items-center gap-4 p-4 bg-card rounded-lg border border-border hover:bg-accent transition-colors"
+                >
+                  <item.icon className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1 text-left">
+                    <h3 className="font-medium">{item.label}</h3>
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  </div>
+                </button>
+              ))}
 
             <button className="w-full flex items-center gap-4 p-4 bg-card rounded-lg border border-border hover:bg-destructive/10 transition-colors text-destructive mt-6">
               <LogOut className="h-5 w-5" />

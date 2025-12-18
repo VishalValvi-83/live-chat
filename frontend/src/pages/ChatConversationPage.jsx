@@ -125,7 +125,7 @@ export default function ChatConversationPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const scrollRef = useRef(null)
-
+  
   const [messages, setMessages] = useState(mockMessages[id] || [])
   const [isTyping, setIsTyping] = useState(false)
   const user = mockUsers[id]
@@ -211,7 +211,7 @@ export default function ChatConversationPage() {
               userName={!message.isSent ? user.name : undefined}
             />
           ))}
-
+          
           {isTyping && <TypingIndicator avatar={user.avatar} userName={user.name} />}
         </div>
       </ScrollArea>

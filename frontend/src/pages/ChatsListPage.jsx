@@ -99,31 +99,31 @@ export default function ChatsListPage() {
   return (
     <div className="h-screen flex flex-col bg-background">
       <div className="border-b border-border bg-card/50 backdrop-blur-sm px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-6 w-6 text-blue-500" />
-            <h1 className="text-2xl font-bold">Chats</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-6 w-6 text-blue-500" />
+              <h1 className="text-2xl font-bold">Chats</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full"
+                onClick={() => navigate("/settings")}
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+              <Avatar 
+                className="h-9 w-9 cursor-pointer"
+                onClick={() => navigate("/profile")}
+              >
+                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Current" />
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => navigate("/settings")}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-            <Avatar
-              className="h-9 w-9 cursor-pointer"
-              onClick={() => navigate("/profile")}
-            >
-              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Current" />
-              <AvatarFallback>
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

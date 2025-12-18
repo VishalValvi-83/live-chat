@@ -3,8 +3,10 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring } from "fram
 import { MessageCircle, Shield, Zap, Users, Lock, Check } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { usePreloader } from "@/App"
 
 export default function HomePage() {
+  const { preloaderComplete } = usePreloader()
   const containerRef = useRef(null)
   const featureRef = useRef(null)
   const heroRef = useRef(null)
@@ -237,7 +239,7 @@ export default function HomePage() {
         >
           <motion.div
             initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={preloaderComplete ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.8 }}
             className="space-y-6"
             style={{
@@ -248,7 +250,7 @@ export default function HomePage() {
               <motion.h1
                 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight"
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={preloaderComplete ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 Connect with{" "}
@@ -307,7 +309,7 @@ export default function HomePage() {
                 <br />
                 <motion.span
                   initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  animate={preloaderComplete ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
                 >
                   securely and instantly
@@ -318,7 +320,7 @@ export default function HomePage() {
             <motion.p
               className="text-xl text-muted-foreground max-w-2xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={preloaderComplete ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ duration: 0.8, delay: 0.6 }}
               style={{
                 x: useTransform(bgX, [-50, 50], [-3, 3]),
@@ -333,7 +335,7 @@ export default function HomePage() {
             <motion.div
               className="flex items-center justify-center gap-4 pt-4"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={preloaderComplete ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ duration: 0.8, delay: 0.8 }}
               style={{
                 x: useTransform(bgX, [-50, 50], [-2, 2]),
@@ -357,7 +359,7 @@ export default function HomePage() {
                     perspective: "1000px"
                   }}
                 >
-                  <motion.div
+                  {/* <motion.div
                     className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-violet-600 rounded-lg blur-lg opacity-50 group-hover:opacity-100"
                     animate={{
                       scale: [1, 1.1, 1],
@@ -368,14 +370,14 @@ export default function HomePage() {
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
-                  />
-                  <Button size="lg" className="relative bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-2xl overflow-hidden">
-                    <motion.span
+                  /> */}
+                  <Button size="lg" className="relative hover:from-blue-600 hover:to-blue-700 text-white shadow-2xl overflow-hidden">
+                    {/* <motion.span
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                       initial={{ x: '-100%' }}
                       whileHover={{ x: '100%' }}
                       transition={{ duration: 0.6, ease: "easeInOut" }}
-                    />
+                    /> */}
                     <span className="relative z-10">Start Chatting</span>
                   </Button>
                 </motion.div>
@@ -413,7 +415,7 @@ export default function HomePage() {
 
           <motion.div
             initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={preloaderComplete ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
             transition={{ duration: 0.8, delay: 1 }}
             className="mt-16 relative"
             style={{

@@ -3,118 +3,150 @@ import { gsap } from 'gsap'
 
 const PreLoader = ({ onComplete }) => {
   const containerRef = useRef(null)
-  const nameRef = useRef(null)
-  const titleRef = useRef(null)
+  const [percentage, setPercentage] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
 
-    useEffect(() => {
-      const ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          onComplete: () => {
-            setTimeout(() => {
-              setIsComplete(true)
-              setTimeout(() => onComplete?.(), 500)
-            }, 300)
-          }
+  const textCircles = [
+    {
+      text: "VISHAL VALVI • FULL STACK DEVELOPER • CREATIVE DESIGNER • ",
+      radius: 160,
+      duration: 15,
+      direction: 1
+    },
+    {
+      text: "REACT.JS • NODE.JS • MERN STACK • ANIMATION • ",
+      radius: 120,
+      duration: 10,
+      direction: -1
+    },
+    {
+      text: "PASSIONATE • INNOVATIVE • MINIMALIST • ARTISTIC • ",
+      radius: 80,
+      duration: 8,
+      direction: 1
+    }
+  ]
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Percentage counter animation
+      const counter = { value: 0 }
+      gsap.to(counter, {
+        value: 100,
+        duration: 3,
+        ease: "power2.inOut",
+        onUpdate: () => setPercentage(Math.round(counter.value)),
+        onComplete: () => {
+          setTimeout(() => {
+            gsap.to(containerRef.current, {
+              opacity: 0,
+              duration: 1,
+              ease: "power2.inOut",
+              onComplete: () => {
+                setIsComplete(true)
+                onComplete?.()
+              }
+            })
+          }, 500)
+        }
+      })
+
+      // Continuous rotation for each circle
+      const circles = containerRef.current.querySelectorAll('.kinetic-circle')
+      circles.forEach((circle, index) => {
+        const config = textCircles[index]
+        gsap.to(circle, {
+          rotation: 360 * config.direction,
+          duration: config.duration,
+          repeat: -1,
+          ease: "none"
         })
+      })
 
-        const nameLetters = nameRef.current.querySelectorAll('.letter')
-        const titleLetters = titleRef.current.querySelectorAll('.letter')
+      // Initial reveal
+      gsap.from(".kinetic-letter", {
+        opacity: 0,
+        scale: 0,
+        duration: 1,
+        stagger: {
+          each: 0.01,
+          from: "random"
+        },
+        ease: "power3.out"
+      })
 
-          nameLetters.forEach((letter, index) => {
-            const randomX = (Math.random() - 0.5) * window.innerWidth * 0.8
-            const randomY = (Math.random() - 0.5) * window.innerHeight * 0.8
-            const randomRotation = (Math.random() - 0.5) * 360
-            
-            gsap.set(letter, {
-              x: randomX,
-              y: randomY,
-              rotation: randomRotation,
-              opacity: 1,
-              scale: 0.8
-            })
-          })
+      gsap.from(".percentage-text", {
+        opacity: 0,
+        scale: 0.5,
+        duration: 1.5,
+        ease: "back.out(1.7)"
+      })
+    }, containerRef)
 
-          titleLetters.forEach((letter, index) => {
-            const randomX = (Math.random() - 0.5) * window.innerWidth * 0.6
-            const randomY = (Math.random() - 0.5) * window.innerHeight * 0.6
-            const randomRotation = (Math.random() - 0.5) * 360
-            
-            gsap.set(letter, {
-              x: randomX,
-              y: randomY,
-              rotation: randomRotation,
-              opacity: 1,
-              scale: 0.8
-            })
-          })
-
-          tl.to({}, { duration: 1.5 })
-          .to(nameLetters, {
-            x: 0,
-            y: 0,
-            rotation: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 1.5,
-            ease: "power3.out",
-            stagger: 0.05
-          })
-          .to(titleLetters, {
-            x: 0,
-            y: 0,
-            rotation: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 1.2,
-            ease: "power3.out",
-            stagger: 0.03
-          }, "-=0.5")
-        .to(containerRef.current, {
-          opacity: 0,
-          duration: 0.8,
-          ease: "power2.inOut"
-        }, "+=0.8")
-
-      }, containerRef)
-
-      return () => ctx.revert()
-    }, [onComplete])
-
-  const splitText = (text) => {
-    return text.split('').map((char, index) => (
-      <span 
-        key={index} 
-        className="letter inline-block"
-        style={{ display: char === ' ' ? 'inline' : 'inline-block' }}
-      >
-        {char === ' ' ? '\u00A0' : char}
-      </span>
-    ))
-  }
+    return () => ctx.revert()
+  }, [])
 
   return (
     <div
       ref={containerRef}
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 transition-opacity duration-500 ${
-        isComplete ? 'pointer-events-none' : ''
-      }`}
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0a0a] overflow-hidden ${isComplete ? 'pointer-events-none' : ''
+        }`}
     >
-      <div className="relative text-center px-8">
-        <div 
-          ref={nameRef}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-4 text-slate-100"
-          style={{ lineHeight: 1.3, letterSpacing: '0.02em' }}
-        >
-          {splitText('Vishal Valvi')}
+      <div className="relative w-full h-full flex items-center justify-center">
+        {/* Kinetic Typography Circles */}
+        {textCircles.map((circleConfig, circleIndex) => (
+          <div
+            key={circleIndex}
+            className="kinetic-circle absolute"
+            style={{
+              width: circleConfig.radius * 2,
+              height: circleConfig.radius * 2
+            }}
+          >
+            {circleConfig.text.split('').map((char, charIndex) => {
+              const totalChars = circleConfig.text.length
+              const angle = (charIndex / totalChars) * 360
+              const x = Math.cos((angle * Math.PI) / 180) * circleConfig.radius
+              const y = Math.sin((angle * Math.PI) / 180) * circleConfig.radius
+
+              return (
+                <span
+                  key={charIndex}
+                  className="kinetic-letter absolute text-[10px] sm:text-xs font-bold text-white tracking-widest whitespace-nowrap"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angle + 90}deg)`,
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    textTransform: 'uppercase',
+                    opacity: 0.8 - (circleIndex * 0.2)
+                  }}
+                >
+                  {char === ' ' ? '\u00A0' : char}
+                </span>
+              )
+            })}
+          </div>
+        ))}
+
+        {/* Center Percentage */}
+        <div className="percentage-text flex flex-col items-center justify-center z-10">
+          <span
+            className="text-5xl sm:text-7xl font-light text-white tracking-tighter"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            {percentage}%
+          </span>
+          <span
+            className="text-[10px] uppercase tracking-[0.3em] text-white/40 mt-2"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            Loading Experience
+          </span>
         </div>
-        
-        <div 
-          ref={titleRef}
-          className="text-lg sm:text-xl md:text-2xl font-light tracking-wider text-slate-400"
-        >
-          {splitText('Creative Software Developer')}
-        </div>
+
+        {/* Aesthetic background elements */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_70%)] pointer-events-none" />
       </div>
     </div>
   )

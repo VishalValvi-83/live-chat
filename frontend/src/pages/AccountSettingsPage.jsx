@@ -11,8 +11,8 @@ export default function AccountSettingsPage() {
   const [formData, setFormData] = useState({
     name: "Your Name",
     email: "your.email@example.com",
-    phone: "+919874563210",
-    location: "Maharashtra, India",
+    phone: "+1 234 567 8900",
+    location: "New York, USA",
     bio: "Hey there! I'm using this chat app."
   })
 
