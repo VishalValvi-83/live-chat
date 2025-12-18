@@ -425,7 +425,7 @@ export default function HomePage() {
               rotateY: useTransform(bgX, [-50, 50], [-8, 8])
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-50 to-transparent dark:from-slate-950 h-32 bottom-0 z-10" />
+            {/* <div className="absolute inset-0 bg-gradient-to-t from-slate-50 to-transparent dark:from-slate-950 h-32 bottom-0 z-10" /> */}
 
             <motion.div
               className="relative bg-gradient-to-br from-blue-500/10 via-violet-500/10 to-purple-500/10 rounded-3xl p-8 border border-border/50 backdrop-blur-xl shadow-2xl overflow-hidden group cursor-pointer"
