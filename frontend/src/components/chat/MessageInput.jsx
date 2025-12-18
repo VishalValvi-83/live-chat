@@ -27,8 +27,8 @@ export function MessageInput({
 
   return (
     <div className="border-t border-border bg-card/50 backdrop-blur-sm px-4 py-3 sticky bottom-0">
-      <div className="flex items-end gap-2">
-        <div className="flex-1 flex items-end gap-2 bg-muted/50 rounded-3xl px-4 py-2 border border-border/50">
+      <div className="flex items-cneter gap-2">
+        <div className="flex-1 flex items-center gap-2 bg-muted/50 rounded-3xl px-4 py-2 border border-border/50">
           <Button
             variant="ghost"
             size="icon"
@@ -42,7 +42,7 @@ export function MessageInput({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder={placeholder}
-            className="flex-1 min-h-[40px] max-h-32 resize-none border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+            className="flex-1 align-middle min-h-[40px] max-h-32 resize-none border-0 bg-transparent p-2 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
             rows={1}
           />
 
@@ -63,7 +63,7 @@ export function MessageInput({
           >
             <Button
               size="icon"
-              className="rounded-full h-11 w-11 bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
+              className="rounded-full h-11 w-11 mt-1 bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
               onClick={handleSend}
             >
               <Send className="h-5 w-5" />
@@ -78,7 +78,7 @@ export function MessageInput({
             <Button
               size="icon"
               variant={isRecording ? "destructive" : "secondary"}
-              className="rounded-full h-11 w-11 shadow-lg"
+              className="rounded-full h-11 w-11 mt-1 shadow-lg"
               onClick={() => setIsRecording(!isRecording)}
             >
               <Mic className="h-5 w-5" />

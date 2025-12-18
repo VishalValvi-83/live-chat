@@ -19,7 +19,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2 mb-8">
           <MessageCircle className="h-8 w-8 text-blue-500" />
-          <span className="font-bold text-2xl">ChatApp</span>
+          <span className="font-bold text-2xl">VoxenApp</span>
         </div>
         <RegisterForm onSubmit={handleRegister} onLoginClick={handleLoginClick} />
       </div>

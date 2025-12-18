@@ -19,7 +19,7 @@ export function ChatListItem({
       whileHover={{ backgroundColor: "rgba(0, 0, 0, 0.02)" }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-border/30",
+        "flex items-center gap-3 px-4 py-3 relative cursor-pointer transition-colors border-b border-border/30",
         isActive && "bg-accent/50"
       )}
       onClick={onClick}
@@ -36,7 +36,7 @@ export function ChatListItem({
         )}
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 w-full">
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-sm truncate">{name}</h3>
           <span className="text-xs text-muted-foreground">{timestamp}</span>
@@ -44,11 +44,11 @@ export function ChatListItem({
         <p className="text-sm text-muted-foreground truncate">{lastMessage}</p>
       </div>
 
-        {unreadCount > 0 && (
-          <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-5 min-w-[20px] px-1.5">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </Badge>
-        )}
+      {unreadCount > 0 && (
+        <Badge className=" absolute bottom-4 right-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-5 min-w-[20px] px-1.5">
+          {unreadCount > 99 ? "99+" : unreadCount}
+        </Badge>
+      )}
     </motion.div>
   )
 }
