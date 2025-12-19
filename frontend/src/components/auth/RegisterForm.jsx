@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { registerUser } from "@/api/authApi"
 import { motion, AnimatePresence } from "framer-motion"
 import { Eye, EyeOff, Mail, Lock, User, Phone, Upload, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,9 +20,20 @@ export function RegisterForm({ onSubmit, onLoginClick }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    onSubmit?.({ fullName, username, email, phone, password })
-    setIsLoading(false)
+    try {
+      const payload = { full_name: fullName, username, email, phone, password }
+      const response = await registerUser(payload)
+
+      if (response && response.data) {
+        onSubmit?.(response.data)
+      } else {
+        onSubmit?.(payload)
+      }
+    } catch (error) {
+      console.error("Registration failed", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const containerVariants = {
@@ -83,7 +95,7 @@ export function RegisterForm({ onSubmit, onLoginClick }) {
             <Input
               id="fullName"
               type="text"
-              placeholder="John Doe"
+              placeholder="Enter your full name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               onFocus={() => setFocusField("fullName")}
@@ -102,7 +114,7 @@ export function RegisterForm({ onSubmit, onLoginClick }) {
             <Input
               id="username"
               type="text"
-              placeholder="johndoe"
+              placeholder="Choose a username, e.g., johndoe"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               onFocus={() => setFocusField("username")}

@@ -4,12 +4,6 @@ import { LoginForm } from "@/components/auth/LoginForm"
 
 export default function LoginPage() {
   const navigate = useNavigate()
-
-  const handleLogin = (email, password) => {
-    console.log("Login:", { email, password })
-    navigate("/chats")
-  }
-
   const handleRegisterClick = () => {
     navigate("/register")
   }
@@ -21,7 +15,7 @@ export default function LoginPage() {
           <MessageCircle className="h-8 w-8 text-blue-500" />
           <span className="font-bold text-2xl">VoxenApp</span>
         </div>
-        <LoginForm onSubmit={handleLogin} onRegisterClick={handleRegisterClick} />
+        <LoginForm onRegisterClick={handleRegisterClick} />
       </div>
     </div>
   )

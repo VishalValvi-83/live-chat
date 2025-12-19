@@ -35,7 +35,8 @@ export default function RegisterPage() {
 
   const handleRegister = (data) => {
     console.log("Register:", data);
-    navigate("/chats");
+    
+    navigate("/login");
   };
 
   const handleLoginClick = () => {
