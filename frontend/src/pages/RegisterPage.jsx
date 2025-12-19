@@ -33,11 +33,6 @@ export default function RegisterPage() {
       );
   }, []);
 
-  const handleRegister = (data) => {
-    console.log("Register:", data);
-    
-    navigate("/login");
-  };
 
   const handleLoginClick = () => {
     navigate("/login");
@@ -125,7 +120,7 @@ export default function RegisterPage() {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
       >
-        <RegisterForm onSubmit={handleRegister} onLoginClick={handleLoginClick} />
+        <RegisterForm onLoginClick={handleLoginClick} />
       </motion.div>
     </div>
   );

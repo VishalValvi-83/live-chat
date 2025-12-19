@@ -5,9 +5,12 @@ import { Eye, EyeOff, Mail, Lock, User, Phone, Upload, ArrowRight } from "lucide
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-toastify"
 
 
 export function RegisterForm({ onSubmit, onLoginClick }) {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
@@ -24,12 +27,19 @@ export function RegisterForm({ onSubmit, onLoginClick }) {
       const payload = { full_name: fullName, username, email, phone, password }
       const response = await registerUser(payload)
 
-      if (response && response.data) {
-        onSubmit?.(response.data)
+      if (response && response.data && response.status === 200) {
+        toast.success(response.data.message || "Registration successful!")
+        setFullName("")
+        setUsername("")
+        setEmail("")
+        setPhone("")
+        setPassword("")
+        navigate("/login", { replace: true, state: { registered: true, data: email } });
       } else {
-        onSubmit?.(payload)
+        toast.error(response.data.message || "Registration failed. Please try again.")
       }
     } catch (error) {
+      toast.error("An error occurred during registration. Please try again.")
       console.error("Registration failed", error)
     } finally {
       setIsLoading(false)

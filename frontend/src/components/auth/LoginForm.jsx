@@ -1,34 +1,44 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginUser } from "../../api/authApi"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
+import { toast } from "react-toastify"
 
 export function LoginForm({ onRegisterClick }) {
+  const { registered, data } = useLocation().state || {};
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [focusField, setFocusField] = useState("")
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (registered && data) {
+      setEmail(data || "");
+    }
+  }, [registered, data]);
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       setIsLoading(true)
       const res = await loginUser({ email, password })
-      console.log("Login in form:", res)
+
       if (res && res.status === 200) {
-        alert(res.data.message || "Login successful!")
+        toast.success(res.data.message || "Login successful!")
         setEmail("")
         setPassword("")
         navigate("/chats");
+      } else{
+        toast.error(res.data.message || "Login failed. Please try again.")
       }
     } catch (error) {
       console.error("Login failed:", error)
-      alert("Login failed. Please check your credentials and try again.")
+      toast.error("Login failed. Please check your credentials and try again.")
     } finally {
       setIsLoading(false)
     }
