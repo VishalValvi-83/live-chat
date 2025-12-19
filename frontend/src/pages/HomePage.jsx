@@ -525,7 +525,7 @@ export default function HomePage() {
                     </motion.div>
 
                     <div>
-                      <div className={`inline-block px-3 py-1 rounded-full bg-gradient-to-r ${feature.color} bg-opacity-20 text-xs font-medium mb-3 ${textMuted}`}>
+                      <div className={`inline-block px-3 py-1 rounded-lg bg-gradient-to-r ${feature.color} bg-opacity-20 text-xs font-medium mb-3 ${textMuted}`}>
                         {feature.stats}
                       </div>
                       <h3 className={`text-3xl lg:text-4xl font-bold mb-4 ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -927,7 +927,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
                 whileHover={{ y: -5, scale: 1.02 }}
                 className="relative group"
               >
