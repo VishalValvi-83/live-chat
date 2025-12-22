@@ -28,7 +28,7 @@ const Footer = () => {
 
 
     return (
-        <footer className="relative py-16 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: bgColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+        <footer className="relative py-16 px-4 sm:px-6 lg:px-8 selection:bg-slate-100 dark:selection:bg-slate-900" style={{ backgroundColor: bgColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
 
             <div className="flex items-center mx-auto justify-center gap-2 mb-4">
                 <MessageCircle className="h-5 w-5" style={{ color: accentColor }} />
@@ -42,7 +42,7 @@ const Footer = () => {
                     ))}
                 </div>
             </div>
-
+            <div className='text-gray-600 font-thin text-center mb-2'>CODE BY</div>
             <motion.div
                 className="text-center mb-6 overflow-hidden"
                 initial={{ opacity: 0 }}
@@ -50,10 +50,10 @@ const Footer = () => {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.5 }}
             >
-                <div className='text-gray-600 font-thin'>CODE BY</div>
-                <h2
-                    className={`text-6xl md:text-8xl font-black tracking-tight ${textColor}`}
-                    style={{ fontFamily: "'Playfair Display', sans-serif", }}
+
+                <div
+                    className={`text-6xl md:text-8xl tracking-tight ${textColor}`}
+                    style={{ fontFamily: "'Playfair Display', sans-serif", fontWeight: 'lighter !important' }}
                 >
                     {"VISHAL VALVI".split("").map((char, index) => (
                         <motion.span
@@ -71,7 +71,7 @@ const Footer = () => {
                             {char === " " ? "\u00A0" : char}
                         </motion.span>
                     ))}
-                </h2>
+                </div>
             </motion.div>
 
             {/* Social Links */}
@@ -83,7 +83,7 @@ const Footer = () => {
 
             {/* Email */}
             <div className="text-center mb-12">
-                <a href='mailto:VALVI0315@GMAIL.COM' className={`text-sm ${textMuted2} font-sans font-semibold tracking-wide`}>EMAIL: VALVI0315@GMAIL.COM</a>
+                <a href='mailto:VALVI0315@GMAIL.COM' className={`text-sm font-sans font-semibold tracking-wide`}>EMAIL: VALVI0315@GMAIL.COM</a>
             </div>
 
             {/* Title */}

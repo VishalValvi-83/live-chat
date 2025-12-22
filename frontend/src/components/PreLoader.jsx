@@ -16,7 +16,7 @@ const PreLoader = ({ onComplete }) => {
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "dark"
     const savedAccent = localStorage.getItem("accentColor") || "blue"
-    
+
     let dark = false
     if (savedTheme === "dark") {
       dark = true
@@ -41,9 +41,9 @@ const PreLoader = ({ onComplete }) => {
       const circles = containerRef.current.querySelectorAll('.orbit-circle')
       const percentageEl = containerRef.current.querySelector('.percentage-text')
 
-      gsap.set(circles, { 
-        scale: 0.5, 
-        opacity: 0 
+      gsap.set(circles, {
+        scale: 0.5,
+        opacity: 0
       })
 
       gsap.set(percentageEl, {
@@ -92,7 +92,7 @@ const PreLoader = ({ onComplete }) => {
         val: 100,
         duration: 3,
         ease: "power1.inOut",
-        onUpdate: function() {
+        onUpdate: function () {
           const newVal = Math.round(this.targets()[0].val)
           setPercentage(newVal)
         },
@@ -158,7 +158,7 @@ const PreLoader = ({ onComplete }) => {
       style={{ backgroundColor: bgColor }}
     >
       <div className="relative w-[420px] h-[420px] sm:w-[520px] sm:h-[520px]">
-        <div 
+        <div
           className="orbit-circle absolute inset-0"
           style={{ transformOrigin: 'center center' }}
         >
@@ -167,7 +167,7 @@ const PreLoader = ({ onComplete }) => {
           </div>
         </div>
 
-        <div 
+        <div
           className="orbit-circle absolute inset-0"
           style={{ transformOrigin: 'center center' }}
         >
@@ -176,7 +176,7 @@ const PreLoader = ({ onComplete }) => {
           </div>
         </div>
 
-        <div 
+        <div
           className="orbit-circle absolute inset-0"
           style={{ transformOrigin: 'center center' }}
         >
@@ -186,20 +186,20 @@ const PreLoader = ({ onComplete }) => {
         </div>
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <div 
-            className="percentage-text text-7xl sm:text-8xl font-light tracking-tight"
-            style={{ 
+          <div
+            className="percentage-text text-4xl font-light tracking-tight"
+            style={{
               fontFamily: "'Space Grotesk', sans-serif",
               color: percentageColor
             }}
           >
-            {percentage}
+            {percentage}%
           </div>
         </div>
 
-        <div 
+        <div
           className="absolute inset-0 rounded-full opacity-20 blur-3xl"
-          style={{ 
+          style={{
             background: `radial-gradient(circle, ${accentColor} 0%, transparent 70%)`,
             transform: 'scale(0.8)'
           }}
