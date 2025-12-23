@@ -390,7 +390,7 @@ export default function ChatConversationPage() {
     <div className="h-screen flex flex-col bg-background">
       <ChatHeader
         avatar={chatPartner?.avatar}
-        name={chatPartner?.name || "Chat"}
+        name={chatPartner?.full_name || "Chat"}
         status={chatPartner?.status || (isTyping ? "typing..." : "online")}
         isTyping={isTyping} 
         onBack={() => navigate("/chats")}

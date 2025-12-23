@@ -95,7 +95,7 @@ export default function ChatsListPage() {
   const [activeChat, setActiveChat] = useState(null)
   const [chatlist, setChatlist] = useState(!isDemo ? [] : mockChats)
   const filteredChats = chatlist?.filter((chat) =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    chat.user?.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const fetchChats = async () => {
@@ -104,6 +104,7 @@ export default function ChatsListPage() {
       const chats = response?.data?.data;
 
       if (!isDemo) {
+
         const formattedChats = chats?.map(chat => {
           const otherUserId =
             chat.sender_id === currentUser.id
@@ -111,10 +112,10 @@ export default function ChatsListPage() {
               : chat.sender_id;
 
           return {
-            id: chat._id,
-            user: { id: otherUserId },
-            name: "User " + otherUserId,
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + otherUserId,
+            id: chat.chat_id,
+            user: chat.user,
+            name: chat.user?.full_name,
+            avatar: chat.user?.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.user?.full_name}`,
             lastMessage: chat.last_message,
             timestamp: new Date(chat.createdAt).toLocaleTimeString(),
             unreadCount: 0,
@@ -126,9 +127,6 @@ export default function ChatsListPage() {
       else {
         setChatlist(mockChats);
       }
-
-
-
     } catch (error) {
       console.error("Failed to fetch chats:", error);
     }
