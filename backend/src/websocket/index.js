@@ -15,16 +15,16 @@ export const initSocket = (server) => {
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    // join user room
+    
     socket.on("join", async (userId) => {
-      socket.userId = userId;   // store for disconnect
+      socket.userId = userId;   
       socket.join(userId.toString());
 
       await markUserOnline(userId);
       console.log(`User ${userId} is ONLINE`);
     });
 
-    // send message
+    
     socket.on("send-message", (data) => {
       io.to(data.receiver_id).emit("receive-message", data);
     });
@@ -56,9 +56,17 @@ export const initSocket = (server) => {
       });
     });
 
-    socket.on("stop-typing", ({ sender_id, receiver_id }) => {
+    socket.on("stop-typing", (data) => {
+      
+      const { receiver_id, sender_id } = data; 
+
+      console.log("Stop-typing:", data);
+
+      if (!receiver_id || !sender_id) return; 
+
       socket.to(receiver_id.toString()).emit("stop-typing", {
-        sender_id
+        sender_id: sender_id, 
+        receiver_id: receiver_id
       });
     });
 

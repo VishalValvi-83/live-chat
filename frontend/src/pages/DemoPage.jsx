@@ -8,7 +8,7 @@ export default function DemoPage() {
 
   const handlePreloaderComplete = () => {
     setShowPreloader(false)
-    navigate("/chats")
+    navigate("/chats", { state: { isDemo: true } })
   }
 
   return (

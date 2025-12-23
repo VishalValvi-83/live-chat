@@ -1,11 +1,12 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Search, MessageCircle, Settings, User } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ChatListItem } from "@/components/chat/ChatListItem"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { getChatsList } from "../../api/chatApi/chatsApi"
 
 const mockChats = [
   {
@@ -84,46 +85,91 @@ const mockChats = [
 
 export default function ChatsListPage() {
   const navigate = useNavigate()
+
+  const location = useLocation();
+  const currentUser = { id: sessionStorage.getItem("user") }
+
+  const isDemo = location.state?.isDemo || currentUser ? false : true;
+
   const [searchQuery, setSearchQuery] = useState("")
   const [activeChat, setActiveChat] = useState(null)
-
-  const filteredChats = mockChats.filter((chat) =>
+  const [chatlist, setChatlist] = useState(!isDemo ? [] : mockChats)
+  const filteredChats = chatlist?.filter((chat) =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleChatClick = (chatId) => {
+  const fetchChats = async () => {
+    try {
+      const response = await getChatsList();
+      const chats = response?.data?.data;
+
+      if (!isDemo) {
+        const formattedChats = chats?.map(chat => {
+          const otherUserId =
+            chat.sender_id === currentUser.id
+              ? chat.receiver_id
+              : chat.sender_id;
+
+          return {
+            id: chat._id,
+            user: { id: otherUserId },
+            name: "User " + otherUserId,
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + otherUserId,
+            lastMessage: chat.last_message,
+            timestamp: new Date(chat.createdAt).toLocaleTimeString(),
+            unreadCount: 0,
+            isOnline: true
+          };
+        });
+        setChatlist(formattedChats);
+      }
+      else {
+        setChatlist(mockChats);
+      }
+
+
+
+    } catch (error) {
+      console.error("Failed to fetch chats:", error);
+    }
+  }
+  useEffect(() => {
+    fetchChats();
+  }, []);
+
+  const handleChatClick = (chatId, user) => {
     setActiveChat(chatId)
-    navigate(`/chats/${chatId}`)
+    navigate(`/chats/${chatId}`, { state: { isDemo, chat_id: chatId, user } })
   }
 
   return (
     <div className="h-screen flex flex-col bg-background">
       <div className="border-b border-border bg-card/50 backdrop-blur-sm px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-6 w-6 text-blue-500" />
-              <h1 className="text-2xl font-bold">Chats</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full"
-                onClick={() => navigate("/settings")}
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-              <Avatar 
-                className="h-9 w-9 cursor-pointer"
-                onClick={() => navigate("/profile")}
-              >
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Current" />
-                <AvatarFallback>
-                  <User className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-            </div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="h-6 w-6 text-blue-500" />
+            <h1 className="text-2xl font-bold">Chats</h1>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => navigate("/settings")}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+            <Avatar
+              className="h-9 w-9 cursor-pointer"
+              onClick={() => navigate("/profile")}
+            >
+              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Current" />
+              <AvatarFallback>
+                <User className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -137,7 +183,7 @@ export default function ChatsListPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {filteredChats.length > 0 ? (
+        {filteredChats?.length > 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -153,7 +199,7 @@ export default function ChatsListPage() {
                 <ChatListItem
                   {...chat}
                   isActive={activeChat === chat.id}
-                  onClick={() => handleChatClick(chat.id)}
+                  onClick={() => handleChatClick(chat.id, chat.user)}
                 />
               </motion.div>
             ))}
@@ -169,3 +215,4 @@ export default function ChatsListPage() {
     </div>
   )
 }
+

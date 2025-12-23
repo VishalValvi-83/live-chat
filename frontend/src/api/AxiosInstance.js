@@ -9,9 +9,8 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(
-    (config) => {
-
-        const token = localStorage.getItem('authToken');
+    async (config) => {
+        const token = await sessionStorage.getItem('authToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -24,17 +23,14 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-    (response) => {
-
-        return response;
-    },
+    (response) => response,
     (error) => {
-
-        if (error.response && error.response.status === 401) {
-            console.error('Unauthorized! Redirect to login.');
+        if (error.response?.status === 401) {
+            window.location.replace("/login");
         }
         return Promise.reject(error);
     }
 );
+
 
 export default api;

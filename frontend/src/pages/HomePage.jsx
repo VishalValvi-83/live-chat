@@ -1584,6 +1584,7 @@ import LivePreviewSection from "../components/home/LivePreviewSection"
 import TestimonialsSection from "../components/home/TestimonialsSection"
 import PricingSection from "../components/home/PricingSection"
 import CTASection from "../components/home/CTASection"
+import Navbar from "../components/layout/Navbar"
 
 export default function HomePage() {
   const { preloaderComplete } = usePreloader()
@@ -1616,7 +1617,7 @@ export default function HomePage() {
 
   return (
     <div ref={containerRef} className="min-h-screen cursor-none overflow-x-hidden" style={{ backgroundColor: bgColor }}>
-      
+
       {/* Custom Cursor */}
       <motion.div
         className="fixed w-8 h-8 rounded-full border-2 pointer-events-none z-[9999] mix-blend-difference"
@@ -1628,30 +1629,8 @@ export default function HomePage() {
       />
 
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b" style={{ backgroundColor: `${bgColor}cc`, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-6 w-6" style={{ color: accentColor }} />
-              <span className={`font-bold text-xl ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>VoxenApp</span>
-            </div>
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className={`${textMuted} hover:${textColor} transition-colors text-sm`}>Features</a>
-              <a href="#communication" className={`${textMuted} hover:${textColor} transition-colors text-sm`}>Communication</a>
-              <a href="#pricing" className={`${textMuted} hover:${textColor} transition-colors text-sm`}>Pricing</a>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link to="/login">
-                <Button variant="ghost" className={`${textMuted} hover:${textColor} ${hoverBg}`}>Sign in</Button>
-              </Link>
-              <Link to="/register">
-                <Button style={{ backgroundColor: accentColor }} className="text-white hover:opacity-90">Get Started</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
+      <Navbar />
+      
       {/* Sections */}
       <HeroSection preloaderComplete={preloaderComplete} />
       <CommunicationSection />

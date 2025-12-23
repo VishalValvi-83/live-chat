@@ -1,222 +1,436 @@
-import { useState, useEffect, useRef } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { useState, useEffect, useRef, useCallback } from "react" 
+import { useParams, useNavigate, useLocation } from "react-router-dom"
+import { io } from "socket.io-client"
 import { ChatHeader } from "@/components/chat/ChatHeader"
 import { MessageBubble } from "@/components/chat/MessageBubble"
 import { MessageInput } from "@/components/chat/MessageInput"
-import { TypingIndicator } from "@/components/chat/TypingIndicator"
+import { TypingIndicator } from "@/components/chat/TypingIndicator" 
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { getChatConversion, sendMessageAPI } from "../../api/chatApi/chatsApi"
 
-const mockUsers = {
-  "1": {
-    name: "Sarah Johnson",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-    status: "online",
-  },
-  "2": {
-    name: "Mike Chen",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
-    status: "online",
-  },
-  "3": {
-    name: "Emily Davis",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
-    status: "last seen 30m ago",
-  },
-  "4": {
-    name: "Alex Turner",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-    status: "online",
-  },
-  "5": {
-    name: "Jessica Martinez",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jessica",
-    status: "last seen 1h ago",
-  },
-  "6": {
-    name: "Tom Wilson",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Tom",
-    status: "last seen 2h ago",
-  },
-  "7": {
-    name: "Rachel Green",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rachel",
-    status: "online",
-  },
-  "8": {
-    name: "David Kim",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-    status: "last seen yesterday",
-  },
-}
 
-const mockMessages = {
-  "1": [
-    {
-      id: "1",
-      content: "Hey! How are you doing?",
-      timestamp: "10:30 AM",
-      isSent: false,
-      status: "read",
-    },
-    {
-      id: "2",
-      content: "I'm doing great! Thanks for asking 😊",
-      timestamp: "10:32 AM",
-      isSent: true,
-      status: "read",
-    },
-    {
-      id: "3",
-      content: "That's awesome! What have you been up to lately?",
-      timestamp: "10:33 AM",
-      isSent: false,
-      status: "read",
-    },
-    {
-      id: "4",
-      content: "Working on some exciting projects. I'll tell you more about it when we meet!",
-      timestamp: "10:35 AM",
-      isSent: true,
-      status: "read",
-    },
-    {
-      id: "5",
-      content: "vacation_photo.jpg",
-      timestamp: "10:36 AM",
-      isSent: false,
-      type: "image",
-      status: "read",
-    },
-    {
-      id: "6",
-      content: "Wow! That looks amazing 🌴",
-      timestamp: "10:38 AM",
-      isSent: true,
-      status: "delivered",
-    },
-  ],
-  "2": [
-    {
-      id: "1",
-      content: "Thanks for the help yesterday!",
-      timestamp: "9:15 AM",
-      isSent: false,
-      status: "read",
-    },
-    {
-      id: "2",
-      content: "No problem! Happy to help anytime",
-      timestamp: "9:20 AM",
-      isSent: true,
-      status: "read",
-    },
-    {
-      id: "3",
-      content: "Voice message",
-      timestamp: "9:22 AM",
-      isSent: false,
-      type: "audio",
-      status: "read",
-    },
-  ],
-}
+const getCurrentUser = () => {
+  const userStr = sessionStorage.getItem("user");
+  return userStr ? JSON.parse(userStr) : null;
+};
 
 export default function ChatConversationPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const scrollRef = useRef(null)
-  
-  const [messages, setMessages] = useState(mockMessages[id] || [])
-  const [isTyping, setIsTyping] = useState(false)
-  const user = mockUsers[id]
+  const messagesEndRef = useRef(null); 
 
+  
+  const socketRef = useRef(null);
+  const typingTimeoutRef = useRef(null); 
+
+  const currentUser = getCurrentUser();
+  const otherUserId = location.state?.user.id;
+  const chat_id = location.state?.chat_id || id;
+  const chatPartner = location.state?.user || null; 
+
+  const [messages, setMessages] = useState([])
+  const [isTyping, setIsTyping] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  
+  useEffect(() => {
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL);
+
+    if (currentUser?.id) {
+      socketRef.current.emit("join", currentUser.id);
+    }
+
+    socketRef.current.on("receive-message", (newMessage) => {
+      if (newMessage.chat_id === chat_id) {
+        setMessages((prev) => [...prev, transformSingleMessage(newMessage, currentUser.id)]);
+        setIsTyping(false); 
+      }
+    });
+
+
+    socketRef.current.on("typing", ({ sender_id }) => {
+
+      if (sender_id === otherUserId) {
+        setIsTyping(true);
+      }
+    });
+
+    socketRef.current.on("stop-typing", ({ sender_id }) => {
+      if (sender_id === otherUserId) {
+        setIsTyping(false);
+      }
+    });
+
+    return () => {
+      socketRef.current.disconnect();
+    };
+  }, [chat_id, currentUser?.id, otherUserId]);
+
+
+  
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!chat_id) return;
+      setLoading(true);
+      try {
+        const response = await getChatConversion(chat_id);
+        if (response.success && response.data) {
+          const formatted = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
+          setMessages(formatted);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [chat_id]);
+
+  
+  const transformSingleMessage = (msg, myId) => {
+    return {
+      id: msg._id,
+      content: msg.content,
+      timestamp: new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      isSent: msg.sender_id === myId,
+      type: msg.message_type === "text" ? undefined : msg.message_type,
+      status: msg.read_at ? "read" : "delivered"
+    };
+  };
+
+  
+  const handleSendMessage = async (content) => {
+    if (!content.trim()) return;
+
+    
+    socketRef.current.emit("stop-typing", {
+      sender_id: currentUser.id,
+      receiver_id: otherUserId
+    });
+
+    const tempId = Date.now().toString();
+    const tempMessage = {
+      id: tempId,
+      content,
+      timestamp: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      isSent: true,
+      status: "sent",
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+
+    const payload = {
+      receiver_id: otherUserId,
+      content: content,
+      message_type: "text"
+    };
+
+    const response = await sendMessageAPI(payload);
+    if (response && response.success) {
+      setMessages((prev) => prev.map(msg =>
+        msg.id === tempId ? transformSingleMessage(response.data, currentUser.id) : msg
+      ));
+    }
+  };
+
+  const handleTyping = () => {
+    if (socketRef.current && otherUserId && currentUser?.id) {
+      socketRef.current.emit("typing", {
+        receiver_id: otherUserId,
+        sender_id: currentUser.id
+      });
+    }
+  };
+
+  const handleStopTyping = () => {
+    if (socketRef.current && otherUserId && currentUser?.id) {
+      socketRef.current.emit("stop-typing", {
+        receiver_id: otherUserId,
+        sender_id: currentUser.id
+      });
+    }
+  };
+
+  
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages])
+  }, [messages, isTyping]); 
 
-  const handleSendMessage = (content) => {
-    const newMessage = {
-      id: Date.now().toString(),
-      content,
-      timestamp: new Date().toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-      isSent: true,
-      status: "sent",
-    }
-
-    setMessages([...messages, newMessage])
-
-    setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: "delivered" } : msg
-        )
-      )
-    }, 1000)
-
-    setTimeout(() => {
-      setIsTyping(true)
-      setTimeout(() => {
-        setIsTyping(false)
-        const replyMessage = {
-          id: (Date.now() + 1).toString(),
-          content: "Thanks for your message! This is a demo response.",
-          timestamp: new Date().toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-          }),
-          isSent: false,
-        }
-        setMessages((prev) => [...prev, replyMessage])
-      }, 2000)
-    }, 1500)
-  }
-
-  if (!user) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-2">Chat not found</h2>
-          <p className="text-muted-foreground">This conversation doesn't exist</p>
-        </div>
-      </div>
-    )
-  }
+  if (!chatPartner && !otherUserId) return <div>Invalid Chat</div>;
 
   return (
     <div className="h-screen flex flex-col bg-background">
       <ChatHeader
-        avatar={user.avatar}
-        name={user.name}
-        status={user.status}
-        isTyping={isTyping}
+        avatar={chatPartner?.avatar}
+        name={chatPartner?.name || "Chat"}
+        status={chatPartner?.status || (isTyping ? "typing..." : "online")}
+        isTyping={isTyping} 
         onBack={() => navigate("/chats")}
       />
 
       <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>
         <div className="max-w-4xl mx-auto">
-          {messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              content={message.content}
-              timestamp={message.timestamp}
-              isSent={message.isSent}
-              type={message.type}
-              status={message.status}
-              avatar={!message.isSent ? user.avatar : undefined}
-              userName={!message.isSent ? user.name : undefined}
-            />
-          ))}
-          
-          {isTyping && <TypingIndicator avatar={user.avatar} userName={user.name} />}
+          {loading ? (
+            <p className="text-center text-muted-foreground mt-4">Loading messages...</p>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <MessageBubble
+                  key={message.id}
+                  {...message}
+                  avatar={!message.isSent ? chatPartner?.avatar : undefined}
+                />
+              ))}
+
+              {/* [NEW] The Rendered Typing Indicator */}
+              {isTyping && (
+                <div className="mb-4">
+                  <TypingIndicator
+                    avatar={chatPartner?.avatar}
+                    userName={chatPartner?.name}
+                  />
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </div>
       </ScrollArea>
 
-      <MessageInput onSendMessage={handleSendMessage} />
+      <MessageInput
+        onSendMessage={handleSendMessage}
+        onTyping={handleTyping}          
+        onStopTyping={handleStopTyping}  
+      />
     </div>
   )
 }
