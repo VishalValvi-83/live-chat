@@ -28,7 +28,140 @@ const Footer = () => {
 
 
     return (
-        <footer className="relative py-16 px-4 sm:px-6 lg:px-8 selection:bg-slate-100 dark:selection:bg-slate-900" style={{ backgroundColor: bgColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+        // <footer className="relative py-16 px-4 sm:px-6 lg:px-8 selection:bg-slate-100 dark:selection:bg-slate-900" style={{ backgroundColor: bgColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+
+        //     <div className="flex items-center mx-auto justify-center gap-2 mb-4">
+        //         <MessageCircle className="h-5 w-5" style={{ color: accentColor }} />
+        //         <span className={`font-bold ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>VoxenApp</span>
+        //     </div>
+
+        //     <div className="max-w-7xl mx-auto">
+        //         <div className="flex flex-wrap justify-center gap-6 mb-8">
+        //             {links.map((link, index) => (
+        //                 <a key={index} href={link.href} className={`text-sm ${textMuted2} ${hoverBg} px-3 py-1 rounded transition-colors cursor-pointer`}>{link.name}</a>
+        //             ))}
+        //         </div>
+        //     </div>
+        //     <div className='text-gray-500 font-thin text-center mb-2'>CODE BY</div>
+        //   
+        //         className="text-center mb-6 overflow-hidden"
+        //         initial={{ opacity: 0 }}
+        //         whileInView={{ opacity: 1 }}
+        //         viewport={{ once: true, amount: 0.3 }}
+        //         transition={{ duration: 0.5 }}
+        //     >
+
+        //         <div
+        //             className={`text-6xl md:text-8xl tracking-tight ${textColor}`}
+        //             style={{ fontFamily: "'Playfair Display', sans-serif", fontWeight: 'lighter !important' }}
+        //         >
+        //             {"VISHAL VALVI".split("").map((char, index) => (
+        //                 <motion.span
+        //                     key={index}
+        //                     className="inline-block selection:bg-slate-100 selection:text-gray-400 dark:selection:bg-slate-900"
+        //                     initial={{ y: "100%" }}
+        //                     whileInView={{ y: 0 }}
+        //                     viewport={{ once: true }}
+        //                     transition={{
+        //                         duration: 0.5,
+        //                         delay: index * 0.05,
+        //                         ease: [0.33, 1, 0.68, 1]
+        //                     }}
+        //                 >
+        //                     {char === " " ? "\u00A0" : char}
+        //                 </motion.span>
+        //             ))}
+        //         </div>
+        //     </motion.div> */}
+
+        //     <motion.div
+        //         className="text-center mb-6 overflow-hidden"
+        //         initial={{ opacity: 0 }}
+        //         whileInView={{ opacity: 1 }}
+        //         viewport={{ once: true, amount: 0.3 }}
+        //         transition={{ duration: 0.5 }}
+        //     >
+        //         <div
+        //             className={`text-5xl sm:text-7xl md:text-8xl tracking-tight whitespace-nowrap ${textColor}`}
+        //             style={{
+        //                 fontFamily: "'Playfair Display', sans-serif",
+        //                 fontWeight: 'lighter'
+        //             }}
+        //         >
+        //             {"VISHAL VALVI".split("").map((char, index) => (
+        //                 <motion.span
+        //                     key={index}
+        //                     className="inline-block selection:bg-slate-100 selection:text-gray-400 dark:selection:bg-slate-900"
+        //                     initial={{ y: "100%" }}
+        //                     whileInView={{ y: 0 }}
+        //                     viewport={{ once: true }}
+        //                     transition={{
+        //                         duration: 0.5,
+        //                         delay: index * 0.05,
+        //                         ease: [0.33, 1, 0.68, 1]
+        //                     }}
+        //                 >
+        //                     {char === " " ? "\u00A0" : char}
+        //                 </motion.span>
+        //             ))}
+        //         </div>
+        //     </motion.div>
+
+        //   
+        //     <div className="flex justify-center gap-8 mb-6 ">
+        //         <a href="https://www.linkedin.com/in/vishal-valvi-b325522a7/" className={`text-sm ${textMuted2} underline underline-offset-2  px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>LINKEDIN</a>
+        //         <a href="https://www.instagram.com/v.i.s.h.a.l__83/" className={`text-sm ${textMuted2} underline underline-offset-2 px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>INSTAGRAM</a>
+        //         <a href="https://github.com/VishalValvi-83" className={`text-sm ${textMuted2} underline underline-offset-2 px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>GITHUB</a>
+        //     </div>
+
+        //   
+        //     <div className="text-center mb-12">
+        //         <a href='mailto:VALVI0315@GMAIL.COM' className={`text-sm font-sans font-semibold tracking-wide`}>EMAIL: VALVI0315@GMAIL.COM</a>
+        //     </div>
+
+        //   
+        //     <motion.div
+        //         className="text-center mb-12 overflow-hidden"
+        //         initial={{ opacity: 0 }}
+        //         whileInView={{ opacity: 1 }}
+        //         viewport={{ once: true, amount: 0.3 }}
+        //         transition={{ duration: 0.5, delay: 0.2 }}
+        //     >
+        //         <h3
+        //             className={`text-4xl md:text-6xl font-bold tracking-tight  ${textMuted}`}
+        //             style={{ fontFamily: "'Playfair Display', sans-serif", letterSpacing: '2px' }}
+        //         >
+        //             {"FULL STACK DEVELOPER".split("").map((char, index) => (
+        //                 <motion.span
+        //                     key={index}
+        //                     className="inline-block selection:bg-slate-100 selection:text-gray-400 dark:selection:bg-slate-900"
+        //                     initial={{ y: "100%" }}
+        //                     whileInView={{ y: 0 }}
+        //                     viewport={{ once: true }}
+        //                     transition={{
+        //                         duration: 0.5,
+        //                         delay: 0.3 + (index * 0.03),
+        //                         ease: [0.33, 1, 0.68, 1]
+        //                     }}
+        //                 >
+        //                     {char === " " ? "\u00A0" : char}
+        //                 </motion.span>
+        //             ))}
+        //         </h3>
+        //     </motion.div>
+
+        //   
+        //     <div className={`flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t text-xs ${textMuted3}`} style={{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+        //         <p>2025 All right reserved. Vishal Valvi.</p>
+        //       
+        //                 <span className={textMuted3}>Code by - </span>
+        //                 <a href="" className={`${textColor} underline`}>VVV</a>
+        //             </div> */}
+        //         <div></div>
+        //     </div>
+
+        // </footer >
+        <footer className="relative h-screen py-16 px-4 flex flex-col justify-around sm:px-6 lg:px-8 selection:bg-slate-100 dark:selection:bg-slate-900" style={{ backgroundColor: bgColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
 
             <div className="flex items-center mx-auto justify-center gap-2 mb-4">
                 <MessageCircle className="h-5 w-5" style={{ color: accentColor }} />
@@ -36,13 +169,15 @@ const Footer = () => {
             </div>
 
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-wrap justify-center gap-6 mb-8">
+                <div className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-8">
                     {links.map((link, index) => (
                         <a key={index} href={link.href} className={`text-sm ${textMuted2} ${hoverBg} px-3 py-1 rounded transition-colors cursor-pointer`}>{link.name}</a>
                     ))}
                 </div>
             </div>
-            <div className='text-gray-600 font-thin text-center mb-2'>CODE BY</div>
+
+            <div className='text-gray-500 font-thin text-center mb-2 text-xs sm:text-sm'>CODE BY</div>
+
             <motion.div
                 className="text-center mb-6 overflow-hidden"
                 initial={{ opacity: 0 }}
@@ -50,15 +185,18 @@ const Footer = () => {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.5 }}
             >
-
                 <div
-                    className={`text-6xl md:text-8xl tracking-tight ${textColor}`}
-                    style={{ fontFamily: "'Playfair Display', sans-serif", fontWeight: 'lighter !important' }}
+                    // UPDATED: text-4xl for mobile (fits 350px screens), sm:text-7xl for tablet, md:text-8xl for desktop
+                    className={`text-5xl sm:text-7xl md:text-8xl tracking-tight whitespace-nowrap ${textColor}`}
+                    style={{
+                        fontFamily: "'Playfair Display', sans-serif",
+                        fontWeight: 'lighter'
+                    }}
                 >
                     {"VISHAL VALVI".split("").map((char, index) => (
                         <motion.span
                             key={index}
-                            className="inline-block selection:bg-slate-100 selection:text-gray-400 dark:selection:bg-slate-900"
+                            className="inline-block selection:bg-slate-100 selection:text-gray-400 dark:text-gray-300 dark:selection:bg-slate-900"
                             initial={{ y: "100%" }}
                             whileInView={{ y: 0 }}
                             viewport={{ once: true }}
@@ -74,19 +212,16 @@ const Footer = () => {
                 </div>
             </motion.div>
 
-            {/* Social Links */}
-            <div className="flex justify-center gap-8 mb-6 ">
-                <a href="https://www.linkedin.com/in/vishal-valvi-b325522a7/" className={`text-sm ${textMuted2} underline underline-offset-2  px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>LINKEDIN</a>
-                <a href="https://www.instagram.com/v.i.s.h.a.l__83/" className={`text-sm ${textMuted2} underline underline-offset-2 px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>INSTAGRAM</a>
-                <a href="https://github.com/VishalValvi-83" className={`text-sm ${textMuted2} underline underline-offset-2 px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>GITHUB</a>
+            <div className="flex justify-center flex-wrap gap-4 sm:gap-8 mb-6">
+                <a href="https://www.linkedin.com/in/vishal-valvi-b325522a7/" className={`text-xs sm:text-sm ${textMuted2} underline underline-offset-2 px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>LINKEDIN</a>
+                <a href="https://www.instagram.com/v.i.s.h.a.l__83/" className={`text-xs sm:text-sm ${textMuted2} underline underline-offset-2 px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>INSTAGRAM</a>
+                <a href="https://github.com/VishalValvi-83" className={`text-xs sm:text-sm ${textMuted2} underline underline-offset-2 px-2 py-1 rounded transition-colors cursor-pointer`} target='_blank'>GITHUB</a>
             </div>
 
-            {/* Email */}
             <div className="text-center mb-12">
-                <a href='mailto:VALVI0315@GMAIL.COM' className={`text-sm font-sans font-semibold tracking-wide`}>EMAIL: VALVI0315@GMAIL.COM</a>
+                <a href='mailto:VALVI0315@GMAIL.COM' className={`text-xs sm:text-sm dark:text-gray-300 font-sans font-semibold tracking-wide break-all`}>EMAIL: VALVI0315@GMAIL.COM</a>
             </div>
 
-            {/* Title */}
             <motion.div
                 className="text-center mb-12 overflow-hidden"
                 initial={{ opacity: 0 }}
@@ -95,7 +230,8 @@ const Footer = () => {
                 transition={{ duration: 0.5, delay: 0.2 }}
             >
                 <h3
-                    className={`text-4xl md:text-6xl font-bold tracking-tight ${textMuted}`}
+                    // UPDATED: text-lg (approx 18px) for mobile ensures "FULL STACK DEVELOPER" (20 chars) fits on one line
+                    className={`text-2xl sm:text-4xl md:text-6xl font-bold tracking-tight whitespace-nowrap ${textMuted}`}
                     style={{ fontFamily: "'Playfair Display', sans-serif", letterSpacing: '2px' }}
                 >
                     {"FULL STACK DEVELOPER".split("").map((char, index) => (
@@ -117,17 +253,12 @@ const Footer = () => {
                 </h3>
             </motion.div>
 
-            {/* Footer Bottom */}
             <div className={`flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t text-xs ${textMuted3}`} style={{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
-                <p>2025 All right reserved. Vishal Valvi.</p>
-                {/* <div>
-                        <span className={textMuted3}>Code by - </span>
-                        <a href="" className={`${textColor} underline`}>VVV</a>
-                    </div> */}
+                <p className="text-center md:text-left">© 2025 All rights reserved. Vishal Valvi.</p>
                 <div></div>
             </div>
 
-        </footer >
+        </footer>
     )
 }
 

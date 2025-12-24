@@ -157,7 +157,13 @@ const PreLoader = ({ onComplete }) => {
       className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
       style={{ backgroundColor: bgColor }}
     >
-      <div className="relative w-[420px] h-[420px] sm:w-[520px] sm:h-[520px]">
+      {/* UPDATED: Added 'scale' classes for responsiveness.
+        - scale-[0.55]: Very small screens (iPhone SE, etc.)
+        - min-[375px]:scale-[0.65]: Standard mobile
+        - min-[500px]:scale-[0.8]: Large phones/Small tablets
+        - sm:scale-100: Desktop/Laptop (Default size)
+      */}
+      <div className="relative w-[420px] h-[420px] sm:w-[520px] sm:h-[520px] scale-[0.55] min-[375px]:scale-[0.65] min-[500px]:scale-[0.8] sm:scale-100 transition-transform duration-300 ease-out">
         <div
           className="orbit-circle absolute inset-0"
           style={{ transformOrigin: 'center center' }}
