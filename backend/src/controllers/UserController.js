@@ -110,3 +110,34 @@ export const updateProfile = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+
+// 👇 ADD THIS FUNCTION AT THE BOTTOM OF THE FILE
+export const searchUser = async (req, res) => {
+    try {
+        const { query } = req.query;
+        const currentUserId = req.user.id;
+
+        if (!query) {
+            return res.status(400).json({ message: "Search query is required" });
+        }
+
+        const [users] = await mysqlDB.query(
+            `SELECT id, full_name, username, profile_image, phone 
+             FROM users 
+             WHERE (username LIKE ? OR phone LIKE ?) 
+             AND id != ?
+             LIMIT 10`,
+            [`%${query}%`, `%${query}%`, currentUserId]
+        );
+
+        res.status(200).json({
+            success: true,
+            data: users
+        });
+
+    } catch (error) {
+        console.error("Search user error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

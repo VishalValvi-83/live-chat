@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
-import { Search, MessageCircle, Settings, User } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Search, MessageCircle, Settings, User, UserPlus, X, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ChatListItem } from "@/components/chat/ChatListItem"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getChatsList } from "../../api/chatApi/chatsApi"
+import { searchUsersAPI } from "../../api/userApi"
 
 const mockChats = [
   {
@@ -91,6 +92,12 @@ export default function ChatsListPage() {
 
   const isDemo = location.state?.isDemo || currentUser ? false : true;
 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+
   const [searchQuery, setSearchQuery] = useState("")
   const [activeChat, setActiveChat] = useState(null)
   const [chatlist, setChatlist] = useState(!isDemo ? [] : mockChats)
@@ -140,8 +147,40 @@ export default function ChatsListPage() {
     navigate(`/chats/${chatId}`, { state: { isDemo, chat_id: chatId, user } })
   }
 
+  const handleUserSearch = async (e) => {
+    const query = e.target.value;
+    setUserSearchQuery(query);
+
+    if (query.length > 2) {
+      setIsSearching(true);
+      const response = await searchUsersAPI(query);
+      if (response.success) {
+        setSearchResults(response.data);
+      }
+      setIsSearching(false);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+
+  const startNewChat = (user) => {
+    navigate(`/chats/${user.id}`, {
+      state: {
+        user: {
+          id: user.id,
+          name: user.full_name || user.username,
+          avatar: user.profile_image,
+          status: "online" 
+        },
+        chat_id: "new" 
+      }
+    });
+    setIsSearchOpen(false);
+  };
+
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background relative">
       <div className="border-b border-border bg-card/50 backdrop-blur-sm px-4 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -210,6 +249,76 @@ export default function ChatsListPage() {
           </div>
         )}
       </div>
+      <div className="absolute bottom-6 right-6 p-4">
+        <Button
+          size="icon"
+          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all"
+          onClick={() => setIsSearchOpen(true)}
+        >
+          <UserPlus className="h-6 w-6" />
+        </Button>
+      </div>
+
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setIsSearchOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-card w-full max-w-md rounded-xl shadow-2xl overflow-hidden border border-border"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-border flex items-center gap-3">
+                <Search className="w-5 h-5 text-muted-foreground" />
+                <input
+                  autoFocus
+                  placeholder="Search by username or phone..."
+                  className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
+                  value={userSearchQuery}
+                  onChange={handleUserSearch}
+                />
+                <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(false)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <div className="max-h-[300px] overflow-y-auto p-2">
+                {isSearching ? (
+                  <div className="flex justify-center p-4"><Loader2 className="animate-spin text-muted-foreground" /></div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map(user => (
+                    <div
+                      key={user.id}
+                      onClick={() => startNewChat(user)}
+                      className="flex items-center gap-3 p-3 hover:bg-accent rounded-lg cursor-pointer transition-colors"
+                    >
+                      <Avatar>
+                        <AvatarImage src={user.profile_image} />
+                        <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{user.full_name}</p>
+                        <p className="text-xs text-muted-foreground">@{user.username}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground text-sm p-4">
+                    {userSearchQuery.length > 0 ? "No users found" : "Type to search..."}
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

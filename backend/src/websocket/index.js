@@ -13,7 +13,7 @@ export const initSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log("User connected:",);
 
     
     socket.on("join", async (userId) => {
@@ -60,7 +60,7 @@ export const initSocket = (server) => {
       
       const { receiver_id, sender_id } = data; 
 
-      console.log("Stop-typing:", data);
+      // console.log("Stop-typing:", data);
 
       if (!receiver_id || !sender_id) return; 
 
