@@ -27,3 +27,12 @@ export const updateUserProfileAPI = async (data) => {
         return { success: false, message: error?.response?.data?.message || "Update failed" };
     }
 };
+
+export const updateProfileImageAPI = async (data) => {
+    try {
+        const response = await axiosInstance.put("/user/profile-image", data);
+        return response.data;
+    } catch (error) {
+        return { success: false, message: error.response?.data?.message || "Image update failed" };
+    }
+};

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ChatListItem } from "@/components/chat/ChatListItem"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getChatsList } from "../../api/chatApi/chatsApi"
-import { searchUsersAPI } from "../../api/userApi"
+import { getUserProfileAPI, searchUsersAPI } from "../../api/userApi"
 
 const mockChats = [
   {
@@ -96,11 +96,12 @@ export default function ChatsListPage() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-
-
   const [searchQuery, setSearchQuery] = useState("")
   const [activeChat, setActiveChat] = useState(null)
   const [chatlist, setChatlist] = useState(!isDemo ? [] : mockChats)
+
+  const [profileImage, setProfileImage] = useState("")
+
   const filteredChats = chatlist?.filter((chat) =>
     chat.user?.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -139,9 +140,23 @@ export default function ChatsListPage() {
     }
   }
   useEffect(() => {
+
     fetchChats();
   }, []);
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await getUserProfileAPI()
+        if (response.success) {
+          setProfileImage(response.data)
+        }
+      } catch (error) {
+        console.error("Failed to load profile", error)
+      }
+    }
+    fetchProfile()
+  }, [])
   const handleChatClick = (chatId, user) => {
     setActiveChat(chatId)
     navigate(`/chats/${chatId}`, { state: { isDemo, chat_id: chatId, user } })
@@ -171,9 +186,9 @@ export default function ChatsListPage() {
           id: user.id,
           name: user.full_name || user.username,
           avatar: user.profile_image,
-          status: "online" 
+          status: "online"
         },
-        chat_id: "new" 
+        chat_id: "new"
       }
     });
     setIsSearchOpen(false);
@@ -192,7 +207,7 @@ export default function ChatsListPage() {
               variant="ghost"
               size="icon"
               className="rounded-full"
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/settings", { state: { profile: profileImage } })}
             >
               <Settings className="h-5 w-5" />
             </Button>
@@ -200,7 +215,7 @@ export default function ChatsListPage() {
               className="h-9 w-9 cursor-pointer"
               onClick={() => navigate("/profile")}
             >
-              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Current" />
+              <AvatarImage src={profileImage.profile_image} />
               <AvatarFallback>
                 <User className="h-4 w-4" />
               </AvatarFallback>
