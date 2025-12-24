@@ -9,3 +9,21 @@ export const searchUsersAPI = async (query) => {
         return { success: false, message: error.response?.data?.message || "Search failed" };
     }
 };
+
+export const getUserProfileAPI = async () => {
+    try {
+        const response = await axiosInstance.get("/user/profile");
+        return response.data;
+    } catch (error) {
+        return { success: false, message: error?.response?.data?.message || "Failed to fetch profile" };
+    }
+};
+
+export const updateUserProfileAPI = async (data) => {
+    try {
+        const response = await axiosInstance.patch("/user/profile", data);
+        return response.data;
+    } catch (error) {
+        return { success: false, message: error?.response?.data?.message || "Update failed" };
+    }
+};

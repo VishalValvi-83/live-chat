@@ -141,3 +141,27 @@ export const searchUser = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+export const getProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [rows] = await mysqlDB.query(
+            "SELECT id, username, full_name, email, phone, profile_image FROM users WHERE id = ?",
+            [userId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            success: true,
+            data: rows[0]
+        });
+
+    } catch (error) {
+        console.error("Get profile error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

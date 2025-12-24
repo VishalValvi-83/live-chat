@@ -301,7 +301,7 @@ export default function ChatsListPage() {
                     >
                       <Avatar>
                         <AvatarImage src={user.profile_image} />
-                        <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>{user.full_name[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{user.full_name}</p>
