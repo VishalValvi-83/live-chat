@@ -22,6 +22,10 @@ export const initSocket = (server) => {
 
       await markUserOnline(userId);
       console.log(`User ${userId} is ONLINE`);
+
+      socket.emit("join_success", { userId, status: "online" });
+
+      socket.broadcast.emit("user-online", { userId });
     });
 
 
@@ -33,6 +37,14 @@ export const initSocket = (server) => {
       if (socket.userId) {
         await markUserOffline(socket.userId);
         console.log(`User ${socket.userId} is OFFLINE`);
+
+        socket.broadcast.emit("user-offline", { userId: socket.userId });
+      }
+    });
+    socket.on("reconnect", async () => {
+      if (socket.userId) {
+        await markUserOnline(socket.userId);
+        socket.broadcast.emit("user-online", { userId: socket.userId });
       }
     });
 
@@ -67,7 +79,6 @@ export const initSocket = (server) => {
 
       const { receiver_id, sender_id } = data;
 
-  
 
       if (!receiver_id || !sender_id) return;
 
@@ -75,6 +86,10 @@ export const initSocket = (server) => {
         sender_id: sender_id,
         receiver_id: receiver_id
       });
+    });
+
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
     });
 
   });

@@ -61,54 +61,132 @@ export default function ChatsListPage() {
   const [chatlist, setChatlist] = useState([])
   const [profileImage, setProfileImage] = useState("")
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [isOnline, setIsOnline] = useState(false);
 
   const socketRef = useRef(null);
 
 
+  // useEffect(() => {
+  //   if (isDemo || !currentUser?.id) return;
+
+
+  //   socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
+
+
+  //   socketRef.current.emit("join", currentUser.id);
+  //   setIsOnline(true);
+
+  //   socketRef.current.on("join_success", () => {
+  //     setIsOnline(true);
+  //   });
+  //   socketRef.current.on("receive-message", (newMessage) => {
+
+  //     socketRef.current.emit("message-delivered", {
+  //       message_id: newMessage._id,
+  //       sender_id: newMessage.sender_id
+  //     });
+
+  //     setTypingUsers(prev => {
+  //       const newSet = new Set(prev);
+  //       newSet.delete(newMessage.sender_id);
+  //       return newSet;
+  //     });
+  //     setChatlist(prevChats => {
+  //       const existingChatIndex = prevChats.findIndex(c => c.id === newMessage.chat_id);
+
+  //       if (existingChatIndex !== -1) {
+
+  //         const updatedChat = {
+  //           ...prevChats[existingChatIndex],
+  //           lastMessage: newMessage.content,
+  //           timestamp: new Date().toLocaleTimeString(),
+  //           unreadCount: prevChats[existingChatIndex].unreadCount + 1
+  //         };
+
+  //         const newChats = [...prevChats];
+  //         newChats.splice(existingChatIndex, 1);
+  //         return [updatedChat, ...newChats];
+  //       } else {
+
+  //         fetchChats();
+  //         return prevChats;
+  //       }
+  //     });
+  //   });
+  //   socketRef.current.on("typing", ({ sender_id }) => {
+  //     setTypingUsers(prev => new Set(prev).add(sender_id));
+  //   });
+
+  //   socketRef.current.on("stop-typing", ({ sender_id }) => {
+  //     setTypingUsers(prev => {
+  //       const newSet = new Set(prev);
+  //       newSet.delete(sender_id);
+  //       return newSet;
+  //     });
+  //   });
+
+  //   socketRef.current.on("disconnect", () => {
+  //     setIsOnline(false);
+  //   });
+
+  //   return () => {
+  //     socketRef.current?.disconnect();
+  //   };
+  // }, [isDemo, currentUser?.id]);
+
+
+  // Socket Logic
   useEffect(() => {
     if (isDemo || !currentUser?.id) return;
 
-
+    // 1. Connect
     socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
 
-
+    // 2. Join Room
     socketRef.current.emit("join", currentUser.id);
 
+    socketRef.current.on("join_success", () => {
+      console.log("Successfully connected and joined");
+    });
 
+    // 3. Listen for Messages (Your existing logic)
     socketRef.current.on("receive-message", (newMessage) => {
-
+      // Notify Sender
       socketRef.current.emit("message-delivered", {
         message_id: newMessage._id,
         sender_id: newMessage.sender_id
       });
 
+      // Remove from typing list
       setTypingUsers(prev => {
         const newSet = new Set(prev);
         newSet.delete(newMessage.sender_id);
         return newSet;
       });
+
+      // Update Chat List (Move to top)
       setChatlist(prevChats => {
         const existingChatIndex = prevChats.findIndex(c => c.id === newMessage.chat_id);
 
+        let updatedChat;
         if (existingChatIndex !== -1) {
-
-          const updatedChat = {
+          updatedChat = {
             ...prevChats[existingChatIndex],
             lastMessage: newMessage.content,
-            timestamp: new Date().toLocaleTimeString(),
-            unreadCount: prevChats[existingChatIndex].unreadCount + 1
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            unreadCount: (prevChats[existingChatIndex].unreadCount || 0) + 1
           };
-
           const newChats = [...prevChats];
           newChats.splice(existingChatIndex, 1);
           return [updatedChat, ...newChats];
         } else {
-
-          fetchChats();
+          fetchChats(); // New chat started
           return prevChats;
         }
       });
     });
+
+  
     socketRef.current.on("typing", ({ sender_id }) => {
       setTypingUsers(prev => new Set(prev).add(sender_id));
     });
@@ -121,12 +199,25 @@ export default function ChatsListPage() {
       });
     });
 
+  
+    socketRef.current.on("user-online", ({ userId }) => {
+      setChatlist(prev => prev.map(chat =>
+        // Check if this chat belongs to the user who just came online
+        chat.user?.id === userId ? { ...chat, isOnline: true } : chat
+      ));
+    });
+
+    socketRef.current.on("user-offline", ({ userId }) => {
+      setChatlist(prev => prev.map(chat =>
+        chat.user?.id === userId ? { ...chat, isOnline: false } : chat
+      ));
+    });
+
+    // Cleanup
     return () => {
       socketRef.current?.disconnect();
     };
   }, [isDemo, currentUser?.id]);
-
-
 
   const fetchChats = async () => {
     try {
@@ -157,7 +248,7 @@ export default function ChatsListPage() {
             lastMessage: chat.last_message,
             timestamp: new Date(chat.updatedAt || chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             unreadCount: chat.unreadCount || 0,
-            isOnline: true
+            isOnline: isOnline
           };
         });
         setChatlist(formattedChats);
