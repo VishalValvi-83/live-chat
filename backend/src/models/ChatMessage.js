@@ -46,6 +46,15 @@ const messageSchema = new mongoose.Schema(
             id: { type: String },
             content: { type: String },
             type: { type: String }
+        },
+        scheduled_for: {
+            type: Date,
+            default: null
+        },
+        status: {
+            type: String,
+            enum: ["sent", "delivered", "read", "scheduled"],
+            default: "sent"
         }
     },
     { timestamps: true }

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react"
-import { Send, Smile, Paperclip, Mic, Square, Trash2, Loader2 } from "lucide-react"
+import { Send, Smile, Paperclip, Mic, Square, Trash2, Loader2, Clock } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { X, CornerUpLeft } from "lucide-react";
@@ -13,7 +13,8 @@ export function MessageInput({ onSendMessage, onTyping, onStopTyping, replyingTo
   const [isRecording, setIsRecording] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
-
+  const [scheduleTime, setScheduleTime] = useState(""); // Store date string
+  const dateInputRef = useRef(null);
   const mediaRecorderRef = useRef(null)
   const audioChunksRef = useRef([])
   const timerRef = useRef(null)
@@ -22,9 +23,10 @@ export function MessageInput({ onSendMessage, onTyping, onStopTyping, replyingTo
   const handleSubmit = (e) => {
     e.preventDefault()
     if (message.trim()) {
-      onSendMessage(message, "text") // Pass "text" type
+      onSendMessage(message, "text", scheduleTime || null);
       setMessage("")
       onStopTyping?.()
+      setScheduleTime("");
     }
   }
 
@@ -213,6 +215,23 @@ export function MessageInput({ onSendMessage, onTyping, onStopTyping, replyingTo
                 <Mic className="h-5 w-5" />
               </Button>
             )}
+
+            <input
+              type="datetime-local"
+              ref={dateInputRef}
+              className="hidden"
+              onChange={(e) => setScheduleTime(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)} // Prevent past dates
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={scheduleTime ? "text-blue-500 bg-blue-50" : "text-muted-foreground"}
+              onClick={() => dateInputRef.current?.showPicker()} // Opens native picker
+            >
+              <Clock className="h-5 w-5" />
+            </Button>
           </form>
         )}
       </div>

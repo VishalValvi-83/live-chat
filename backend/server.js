@@ -1,7 +1,8 @@
 import app from "./src/app.js";
 import http from 'http'
 import { initSocket } from "./src/websocket/index.js";
-
+import { initScheduler } from "./src/services/scheduler.service.js";
+initScheduler();
 const server = http.createServer(app)
 initSocket(server)
 

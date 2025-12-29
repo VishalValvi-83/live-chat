@@ -123,7 +123,7 @@ export default function ChatConversationPage() {
       timestamp: new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
       isSent: msg.sender_id === myId,
       type: msg.message_type === "text" ? undefined : msg.message_type,
-      status: msg.read_at ? "read" : (msg.delivered_at ? "delivered" : "sent"),
+      status: msg.status === "scheduled" ? "scheduled" : (msg.delivered_at ? "delivered" : "sent"),
       reply_to: msg.reply_to ? {
         id: msg.reply_to.id,
         content: msg.reply_to.content,
@@ -175,7 +175,7 @@ export default function ChatConversationPage() {
 
   // };
 
-  const handleSendMessage = async (content, type = "text") => {
+  const handleSendMessage = async (content, type = "text", scheduledFor = null) => {
     if (!content && type === "text") return;
 
     // Payload now includes reply_to
@@ -183,12 +183,14 @@ export default function ChatConversationPage() {
       receiver_id: otherUserId,
       content: content,
       message_type: type,
+      scheduled_for: scheduledFor || null,
       reply_to: replyingTo ? {
         id: replyingTo.id,
         content: replyingTo.content,
         type: replyingTo.type,
         sender_id: replyingTo.sender_id // To show "Replying to Ben"
       } : null
+
     };
 
     // Optimistic UI Update (Temp Message)
@@ -198,7 +200,7 @@ export default function ChatConversationPage() {
       content,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isSent: true,
-      status: "sent",
+      status: scheduledFor ? "scheduled" : "sent",
       type: type,
       reply_to: payload.reply_to // Show reply immediately in UI
     };

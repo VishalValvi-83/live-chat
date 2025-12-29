@@ -146,7 +146,7 @@ export default function ChatsListPage() {
     socketRef.current.emit("join", currentUser.id);
 
     socketRef.current.on("join_success", () => {
-      console.log("Successfully connected and joined");
+      setIsOnline(true);
     });
 
     // 3. Listen for Messages (Your existing logic)

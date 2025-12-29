@@ -4,24 +4,30 @@ import { getIO } from "../websocket/index.js";
 export const sendMessage = async (req, res) => {
     try {
         const sender_id = req.user.id;
-        const { receiver_id, content, message_type, reply_to } = req.body;
-
+        const { receiver_id, content, message_type, reply_to, scheduled_for } = req.body;
         const chat_id =
             sender_id < receiver_id
                 ? `${sender_id}_${receiver_id}`
                 : `${receiver_id}_${sender_id}`;
+
+        const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
 
         const message = await Message.create({
             chat_id,
             sender_id,
             receiver_id,
             content,
+            message_type,
             reply_to: reply_to || null,
+            scheduled_for: isScheduled ? new Date(scheduled_for) : null,
+            status: isScheduled ? "scheduled" : "sent", // Set status
             is_encrypted: true
         });
 
-        const io = getIO();
-        io.to(receiver_id.toString()).emit("receive-message", message);
+        if (!isScheduled) {
+            const io = getIO();
+            io.to(receiver_id.toString()).emit("receive-message", message);
+        }
 
         return res.status(201).json({
             success: true,
