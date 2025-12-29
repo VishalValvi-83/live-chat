@@ -2,6 +2,7 @@ import { motion } from "framer-motion"
 import { Check, CheckCheck, Image as ImageIcon, FileText, Mic } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import CustomAudioPlayer from "./CustomAudioPlayer"
 
 export function MessageBubble({
   content,
@@ -37,17 +38,22 @@ export function MessageBubble({
         )
       case "audio":
         return (
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background/50">
-              <Mic className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <div className="h-1 w-32 rounded-full bg-background/30">
-                <div className="h-full w-1/3 rounded-full bg-background/60" />
-              </div>
-            </div>
-            <span className="text-xs">0:15</span>
-          </div>
+
+          <CustomAudioPlayer content={content} />
+          // <div className="flex items-center gap-3 min-w-[280px]">
+          //   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background/50">
+          //     <Mic className="h-5 w-5" />
+          //   </div>
+          //   <audio
+          //     controls
+          //     src={content}
+          //     className="w-full h-8 "
+          //     onPlay={(e) => e.currentTarget.play()}
+
+          //   // Custom styling for audio element can be tricky, 
+          //   // but this ensures it works on all browsers.
+          //   />
+          // </div>
         )
       case "file":
         return (
@@ -89,17 +95,17 @@ export function MessageBubble({
         className={cn(
           "max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm",
           isSent
-            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-md"
-            : "bg-card text-card-foreground rounded-bl-md border border-border/50"
+            ? "bg-gradient-to-br from-primary to- text-white rounded-br-md"
+            : "bg-primary-foreground text-card-foreground rounded-bl-md border border-border/50"
         )}
       >
         {renderMessageContent()}
-        
+
         <div className={cn(
           "flex items-center justify-end gap-1 mt-1.5",
           isSent ? "text-white/70" : "text-muted-foreground"
         )}>
-          <span className="text-xs">{timestamp}</span>
+          <span className="text-xs text-secondary-foreground">{timestamp}</span>
           {isSent && (
             <span>
               {status === "sent" && <Check className="h-3.5 w-3.5" />}

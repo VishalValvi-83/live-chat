@@ -1,112 +1,200 @@
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Smile, Paperclip, Mic, Send } from "lucide-react"
+import { useState, useRef } from "react"
+import { Send, Smile, Paperclip, Mic, Square, Trash2, Loader2 } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 
-export function MessageInput({
-  onSendMessage,
-  onTyping,      
-  onStopTyping,  
-  placeholder = "Type a message...",
-}) {
+
+const CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_VOICE_PRESET;
+
+
+export function MessageInput({ onSendMessage, onTyping, onStopTyping }) {
   const [message, setMessage] = useState("")
   const [isRecording, setIsRecording] = useState(false)
-  const [typingTimeout, setTypingTimeout] = useState(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
 
-  const handleSend = () => {
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
+  const timerRef = useRef(null)
+
+  // 1. Handle Text Submit
+  const handleSubmit = (e) => {
+    e.preventDefault()
     if (message.trim()) {
-      onSendMessage?.(message)
+      onSendMessage(message, "text") // Pass "text" type
       setMessage("")
+      onStopTyping?.()
     }
   }
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
+  // 2. Start Recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaRecorderRef.current = new MediaRecorder(stream)
+      audioChunksRef.current = []
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+
+      mediaRecorderRef.current.onstop = handleUploadAudio
+
+      mediaRecorderRef.current.start()
+      setIsRecording(true)
+
+      // Start Timer
+      setRecordingTime(0)
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+
+    } catch (error) {
+      console.error("Microphone access denied:", error)
+      alert("Could not access microphone.")
     }
   }
 
-  const handleChange = (e) => {
-    const value = e.target.value;
-    setMessage(value);
+  // 3. Stop Recording & Upload
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      clearInterval(timerRef.current)
 
-    
-    if (onTyping) onTyping();
+      // Stop all audio tracks to release microphone
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+    }
+  }
 
-    
-    if (typingTimeout) clearTimeout(typingTimeout);
+  // 4. Cancel Recording
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      clearInterval(timerRef.current)
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+      // Clear data handler to prevent upload
+      mediaRecorderRef.current.onstop = null
+      audioChunksRef.current = []
+    }
+  }
 
-    
-    const newTimeout = setTimeout(() => {
-      if (onStopTyping) onStopTyping();
-    }, 2000);
+  // 5. Upload to Cloudinary
+  const handleUploadAudio = async () => {
+    if (audioChunksRef.current.length === 0) return
 
-    setTypingTimeout(newTimeout);
-  };
+    setIsUploading(true)
+    const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" })
+
+    const formData = new FormData()
+    formData.append("file", audioBlob)
+    formData.append("upload_preset", UPLOAD_PRESET)
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+        method: "POST",
+        body: formData
+      })
+
+      const data = await res.json()
+
+      if (data.secure_url) {
+        onSendMessage(data.secure_url, "audio") // Send as "audio"
+      }
+    } catch (error) {
+      console.error("Audio upload failed:", error)
+      alert("Failed to send audio message")
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  // Format seconds to MM:SS
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   return (
-    <div className="border-t border-border bg-card/50 backdrop-blur-sm px-4 py-3 sticky bottom-0">
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-2 bg-muted/50 rounded-3xl px-4 py-2 border border-border/50">
+    <div className="p-4 bg-background border-t border-border">
+      {isRecording || isUploading ? (
+        
+        <div className="flex items-center gap-4 animate-in fade-in duration-200">
+          <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-muted/50 rounded-full border border-border">
+            <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-sm font-medium text-red-500">
+              {isUploading ? "Sending..." : `Recording ${formatTime(recordingTime)}`}
+            </span>
+          </div>
+
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full h-8 w-8 shrink-0"
+            onClick={cancelRecording}
+            disabled={isUploading}
+            className="text-muted-foreground hover:text-destructive"
           >
-            <Smile className="h-5 w-5 text-muted-foreground" />
+            <Trash2 className="h-5 w-5" />
           </Button>
 
-          <Textarea
-            value={message}
-            onChange={handleChange} 
-            onKeyDown={handleKeyPress}
-            placeholder={placeholder}
-            className="..." 
-            rows={1}
-          />
-
           <Button
-            variant="ghost"
             size="icon"
-            className="rounded-full h-8 w-8 shrink-0"
+            onClick={stopRecording}
+            disabled={isUploading}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-10 w-10 shadow-sm"
           >
-            <Paperclip className="h-5 w-5 text-muted-foreground" />
+            {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
           </Button>
         </div>
+      ) : (
+        
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary transition-colors">
+            <Paperclip className="h-5 w-5" />
+          </Button>
 
-        {message.trim() ? (
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          >
+          <div className="flex-1 relative">
+            <Input
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value)
+                onTyping?.()
+              }}
+              onBlur={() => onStopTyping?.()}
+              placeholder="Type a message..."
+              className="pr-10 rounded-full bg-muted/50 border-border focus-visible:ring-1 focus-visible:ring-primary/20"
+            />
             <Button
+              type="button"
+              variant="ghost"
               size="icon"
-              className="rounded-full h-11 w-11 mt-1 bg-blue-500 hover:bg-blue-600 text-white shadow-lg"
-              onClick={handleSend}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary"
             >
+              <Smile className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {message.trim() ? (
+            <Button type="submit" size="icon" className="rounded-full bg-primary hover:bg-primary/90 shadow-sm transition-all duration-200">
               <Send className="h-5 w-5" />
             </Button>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          >
+          ) : (
             <Button
+              type="button"
               size="icon"
-              variant={isRecording ? "destructive" : "secondary"}
-              className="rounded-full h-11 w-11 mt-1 shadow-lg"
-              onClick={() => setIsRecording(!isRecording)}
+              onClick={startRecording}
+              className="rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-sm transition-all duration-200"
             >
               <Mic className="h-5 w-5" />
             </Button>
-          </motion.div>
-        )}
-      </div>
+          )}
+        </form>
+      )}
     </div>
   )
 }

@@ -145,11 +145,15 @@ export default function ChatsListPage() {
           return dateB - dateA;
         });
         const formattedChats = sortedChats.map(chat => {
+          if (chat.message_type === "audio") {
+            chat.last_message = "Voice Message "
+          }
           return {
             id: chat.chat_id,
             user: chat.user,
             name: chat.user?.full_name || "Unknown User",
             avatar: chat.user?.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.user?.full_name}`,
+            type: chat.message_type,
             lastMessage: chat.last_message,
             timestamp: new Date(chat.updatedAt || chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             unreadCount: chat.unreadCount || 0,

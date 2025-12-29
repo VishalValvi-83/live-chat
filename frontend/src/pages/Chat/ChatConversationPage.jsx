@@ -41,17 +41,17 @@ export default function ChatConversationPage() {
     if (currentUser?.id) {
       socketRef.current.emit("join", currentUser.id);
     }
-    
+
     socketRef.current.on("receive-message", (newMessage) => {
       if (newMessage.chat_id === chat_id) {
         setMessages((prev) => [...prev, transformSingleMessage(newMessage, currentUser.id)]);
         setIsTyping(false);
-        
+
         socketRef.current.emit("message-delivered", {
           message_id: newMessage._id,
           sender_id: newMessage.sender_id
         });
-        
+
         socketRef.current.emit("message-read", {
           chat_id,
           sender_id: newMessage.sender_id
@@ -62,11 +62,11 @@ export default function ChatConversationPage() {
 
     socketRef.current.on("message-status-update", ({ message_id, chat_id, status }) => {
       setMessages(prev => prev.map(msg => {
-        
+
         if (message_id && msg.id === message_id) {
           return { ...msg, status };
         }
-        
+
         if (chat_id && msg.isSent && status === "read") {
           return { ...msg, status: "read" };
         }
@@ -97,11 +97,11 @@ export default function ChatConversationPage() {
           const formatted = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
           setMessages(formatted);
 
-          
+
           if (socketRef.current && otherUserId) {
             socketRef.current.emit("message-read", {
               chat_id,
-              sender_id: otherUserId 
+              sender_id: otherUserId
             });
           }
         }
@@ -112,7 +112,7 @@ export default function ChatConversationPage() {
       }
     };
     fetchHistory();
-  }, [chat_id]); 
+  }, [chat_id]);
 
 
   const transformSingleMessage = (msg, myId) => {
@@ -125,12 +125,11 @@ export default function ChatConversationPage() {
       status: msg.read_at ? "read" : (msg.delivered_at ? "delivered" : "sent")
     };
   };
+  
+  const handleSendMessage = async (content, type = "text") => {
+    if (!content) return; 
 
-
-  const handleSendMessage = async (content) => {
-    if (!content.trim()) return;
-
-
+    
     socketRef.current.emit("stop-typing", {
       sender_id: currentUser.id,
       receiver_id: otherUserId
@@ -143,13 +142,14 @@ export default function ChatConversationPage() {
       timestamp: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
       isSent: true,
       status: "sent",
+      type: type 
     };
     setMessages((prev) => [...prev, tempMessage]);
 
     const payload = {
       receiver_id: otherUserId,
       content: content,
-      message_type: "text"
+      message_type: type 
     };
 
     const response = await sendMessageAPI(payload);
@@ -159,6 +159,7 @@ export default function ChatConversationPage() {
       ));
     }
   };
+
 
   const handleTyping = () => {
     if (socketRef.current && otherUserId && currentUser?.id) {
@@ -213,7 +214,7 @@ export default function ChatConversationPage() {
                 />
               ))}
 
-              
+
               {isTyping && (
                 <div className="mb-4">
                   <TypingIndicator
