@@ -1,233 +1,11 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { useState, useEffect, useRef, useCallback } from "react" 
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { io } from "socket.io-client"
 import { ChatHeader } from "@/components/chat/ChatHeader"
 import { MessageBubble } from "@/components/chat/MessageBubble"
 import { MessageInput } from "@/components/chat/MessageInput"
-import { TypingIndicator } from "@/components/chat/TypingIndicator" 
+import { TypingIndicator } from "@/components/chat/TypingIndicator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getChatConversion, sendMessageAPI } from "../../api/chatApi/chatsApi"
 
@@ -242,48 +20,66 @@ export default function ChatConversationPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const scrollRef = useRef(null)
-  const messagesEndRef = useRef(null); 
+  const messagesEndRef = useRef(null);
 
-  
+
   const socketRef = useRef(null);
-  const typingTimeoutRef = useRef(null); 
+  const typingTimeoutRef = useRef(null);
 
   const currentUser = getCurrentUser();
-  const otherUserId = location.state?.user.id;
+  const otherUserId = location.state?.user?.id;
   const chat_id = location.state?.chat_id || id;
-  const chatPartner = location.state?.user || null; 
+  const chatPartner = location.state?.user || null;
 
   const [messages, setMessages] = useState([])
   const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  
   useEffect(() => {
     socketRef.current = io(import.meta.env.VITE_SOCKET_URL);
 
     if (currentUser?.id) {
       socketRef.current.emit("join", currentUser.id);
     }
-
+    
     socketRef.current.on("receive-message", (newMessage) => {
       if (newMessage.chat_id === chat_id) {
         setMessages((prev) => [...prev, transformSingleMessage(newMessage, currentUser.id)]);
-        setIsTyping(false); 
+        setIsTyping(false);
+        
+        socketRef.current.emit("message-delivered", {
+          message_id: newMessage._id,
+          sender_id: newMessage.sender_id
+        });
+        
+        socketRef.current.emit("message-read", {
+          chat_id,
+          sender_id: newMessage.sender_id
+        });
       }
+    });
+
+
+    socketRef.current.on("message-status-update", ({ message_id, chat_id, status }) => {
+      setMessages(prev => prev.map(msg => {
+        
+        if (message_id && msg.id === message_id) {
+          return { ...msg, status };
+        }
+        
+        if (chat_id && msg.isSent && status === "read") {
+          return { ...msg, status: "read" };
+        }
+        return msg;
+      }));
     });
 
 
     socketRef.current.on("typing", ({ sender_id }) => {
-
-      if (sender_id === otherUserId) {
-        setIsTyping(true);
-      }
+      if (sender_id === otherUserId) setIsTyping(true);
     });
-
     socketRef.current.on("stop-typing", ({ sender_id }) => {
-      if (sender_id === otherUserId) {
-        setIsTyping(false);
-      }
+      if (sender_id === otherUserId) setIsTyping(false);
     });
 
     return () => {
@@ -291,8 +87,6 @@ export default function ChatConversationPage() {
     };
   }, [chat_id, currentUser?.id, otherUserId]);
 
-
-  
   useEffect(() => {
     const fetchHistory = async () => {
       if (!chat_id) return;
@@ -302,6 +96,14 @@ export default function ChatConversationPage() {
         if (response.success && response.data) {
           const formatted = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
           setMessages(formatted);
+
+          
+          if (socketRef.current && otherUserId) {
+            socketRef.current.emit("message-read", {
+              chat_id,
+              sender_id: otherUserId 
+            });
+          }
         }
       } catch (error) {
         console.error(error);
@@ -310,9 +112,9 @@ export default function ChatConversationPage() {
       }
     };
     fetchHistory();
-  }, [chat_id]);
+  }, [chat_id]); 
 
-  
+
   const transformSingleMessage = (msg, myId) => {
     return {
       id: msg._id,
@@ -320,15 +122,15 @@ export default function ChatConversationPage() {
       timestamp: new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
       isSent: msg.sender_id === myId,
       type: msg.message_type === "text" ? undefined : msg.message_type,
-      status: msg.read_at ? "read" : "delivered"
+      status: msg.read_at ? "read" : (msg.delivered_at ? "delivered" : "sent")
     };
   };
 
-  
+
   const handleSendMessage = async (content) => {
     if (!content.trim()) return;
 
-    
+
     socketRef.current.emit("stop-typing", {
       sender_id: currentUser.id,
       receiver_id: otherUserId
@@ -376,13 +178,13 @@ export default function ChatConversationPage() {
     }
   };
 
-  
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isTyping]); 
+  }, [messages, isTyping]);
 
   if (!chatPartner && !otherUserId) return <div>Invalid Chat</div>;
   console.log("ChatPartner:", chatPartner);
@@ -392,7 +194,7 @@ export default function ChatConversationPage() {
         avatar={chatPartner?.profile_image}
         name={chatPartner?.full_name || "Chat"}
         status={chatPartner?.status || (isTyping ? "typing..." : "online")}
-        isTyping={isTyping} 
+        isTyping={isTyping}
         onBack={() => navigate("/chats")}
         profileId={otherUserId}
       />
@@ -407,11 +209,11 @@ export default function ChatConversationPage() {
                 <MessageBubble
                   key={message.id}
                   {...message}
-                  avatar={!message.isSent ? chatPartner?.avatar : undefined}
+                  avatar={!message.isSent ? chatPartner?.profile_image : undefined}
                 />
               ))}
 
-              {/* [NEW] The Rendered Typing Indicator */}
+              
               {isTyping && (
                 <div className="mb-4">
                   <TypingIndicator
@@ -429,8 +231,8 @@ export default function ChatConversationPage() {
 
       <MessageInput
         onSendMessage={handleSendMessage}
-        onTyping={handleTyping}          
-        onStopTyping={handleStopTyping}  
+        onTyping={handleTyping}
+        onStopTyping={handleStopTyping}
       />
     </div>
   )

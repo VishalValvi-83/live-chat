@@ -104,7 +104,7 @@ export function MessageBubble({
             <span>
               {status === "sent" && <Check className="h-3.5 w-3.5" />}
               {status === "delivered" && <CheckCheck className="h-3.5 w-3.5" />}
-              {status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-200" />}
+              {status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-800" />}
             </span>
           )}
         </div>

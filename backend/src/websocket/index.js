@@ -15,16 +15,16 @@ export const initSocket = (server) => {
   io.on("connection", (socket) => {
     console.log("User connected:",);
 
-    
+
     socket.on("join", async (userId) => {
-      socket.userId = userId;   
+      socket.userId = userId;
       socket.join(userId.toString());
 
       await markUserOnline(userId);
       console.log(`User ${userId} is ONLINE`);
     });
 
-    
+
     socket.on("send-message", (data) => {
       io.to(data.receiver_id).emit("receive-message", data);
     });
@@ -36,18 +36,25 @@ export const initSocket = (server) => {
       }
     });
 
-    socket.on("message-delivered", (messageId) => {
-      Message.findByIdAndUpdate(messageId, {
-        delivered_at: new Date()
+    socket.on("message-delivered", async ({ message_id, sender_id }) => {
+      await Message.findByIdAndUpdate(message_id, { delivered_at: new Date() });
+
+      io.to(sender_id.toString()).emit("message-status-update", {
+        message_id,
+        status: "delivered"
       });
     });
 
-    socket.on("message-read", (chat_id, user_id) => {
-      io.to(user_id.toString()).emit("message-read", { chat_id });
-      Message.updateMany(
-        { chat_id, receiver_id: user_id, read_at: null },
+    socket.on("message-read", async ({ chat_id, sender_id }) => {
+      await Message.updateMany(
+        { chat_id, sender_id, read_at: null },
         { read_at: new Date() }
       );
+
+      io.to(sender_id.toString()).emit("message-status-update", {
+        chat_id,
+        status: "read"
+      });
     });
 
     socket.on("typing", ({ sender_id, receiver_id }) => {
@@ -57,15 +64,15 @@ export const initSocket = (server) => {
     });
 
     socket.on("stop-typing", (data) => {
-      
-      const { receiver_id, sender_id } = data; 
 
-      // console.log("Stop-typing:", data);
+      const { receiver_id, sender_id } = data;
 
-      if (!receiver_id || !sender_id) return; 
+  
+
+      if (!receiver_id || !sender_id) return;
 
       socket.to(receiver_id.toString()).emit("stop-typing", {
-        sender_id: sender_id, 
+        sender_id: sender_id,
         receiver_id: receiver_id
       });
     });

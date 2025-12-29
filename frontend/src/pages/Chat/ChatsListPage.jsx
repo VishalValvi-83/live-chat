@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, MessageCircle, Settings, User, UserPlus, X, Loader2 } from "lucide-react"
@@ -8,6 +8,7 @@ import { ChatListItem } from "@/components/chat/ChatListItem"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getChatsList } from "../../api/chatApi/chatsApi"
 import { getUserProfileAPI, searchUsersAPI } from "../../api/userApi"
+import { io } from "socket.io-client"
 
 const mockChats = [
   {
@@ -28,69 +29,26 @@ const mockChats = [
     unreadCount: 0,
     isOnline: true,
   },
-  {
-    id: "3",
-    name: "Emily Davis",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
-    lastMessage: "See you tomorrow!",
-    timestamp: "Yesterday",
-    unreadCount: 0,
-    isOnline: false,
-  },
-  {
-    id: "4",
-    name: "Alex Turner",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-    lastMessage: "Thanks for the update",
-    timestamp: "Yesterday",
-    unreadCount: 5,
-    isOnline: true,
-  },
-  {
-    id: "5",
-    name: "Jessica Martinez",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jessica",
-    lastMessage: "Let's catch up soon!",
-    timestamp: "2 days ago",
-    unreadCount: 0,
-    isOnline: false,
-  },
-  {
-    id: "6",
-    name: "Tom Wilson",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Tom",
-    lastMessage: "Perfect, I'll be there",
-    timestamp: "2 days ago",
-    unreadCount: 1,
-    isOnline: false,
-  },
-  {
-    id: "7",
-    name: "Rachel Green",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rachel",
-    lastMessage: "Did you get my email?",
-    timestamp: "3 days ago",
-    unreadCount: 0,
-    isOnline: true,
-  },
-  {
-    id: "8",
-    name: "David Kim",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
-    lastMessage: "Great meeting today!",
-    timestamp: "1 week ago",
-    unreadCount: 0,
-    isOnline: false,
-  },
+
 ]
+
+
+const getCurrentUser = () => {
+  try {
+    const userStr = sessionStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (e) {
+    return null;
+  }
+};
 
 export default function ChatsListPage() {
   const navigate = useNavigate()
-
   const location = useLocation();
-  const currentUser = { id: sessionStorage.getItem("user") }
 
-  const isDemo = location.state?.isDemo || currentUser ? false : true;
+
+  const currentUser = getCurrentUser() || { id: sessionStorage.getItem("user") };
+  const isDemo = location.state?.isDemo || !currentUser?.id;
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -98,51 +56,116 @@ export default function ChatsListPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("")
   const [activeChat, setActiveChat] = useState(null)
-  const [chatlist, setChatlist] = useState(!isDemo ? [] : mockChats)
 
+
+  const [chatlist, setChatlist] = useState([])
   const [profileImage, setProfileImage] = useState("")
+  const [typingUsers, setTypingUsers] = useState(new Set());
 
-  const filteredChats = chatlist?.filter((chat) =>
-    chat.user?.full_name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const socketRef = useRef(null);
+
+
+  useEffect(() => {
+    if (isDemo || !currentUser?.id) return;
+
+
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
+
+
+    socketRef.current.emit("join", currentUser.id);
+
+
+    socketRef.current.on("receive-message", (newMessage) => {
+
+      socketRef.current.emit("message-delivered", {
+        message_id: newMessage._id,
+        sender_id: newMessage.sender_id
+      });
+
+      setTypingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(newMessage.sender_id);
+        return newSet;
+      });
+      setChatlist(prevChats => {
+        const existingChatIndex = prevChats.findIndex(c => c.id === newMessage.chat_id);
+
+        if (existingChatIndex !== -1) {
+
+          const updatedChat = {
+            ...prevChats[existingChatIndex],
+            lastMessage: newMessage.content,
+            timestamp: new Date().toLocaleTimeString(),
+            unreadCount: prevChats[existingChatIndex].unreadCount + 1
+          };
+
+          const newChats = [...prevChats];
+          newChats.splice(existingChatIndex, 1);
+          return [updatedChat, ...newChats];
+        } else {
+
+          fetchChats();
+          return prevChats;
+        }
+      });
+    });
+    socketRef.current.on("typing", ({ sender_id }) => {
+      setTypingUsers(prev => new Set(prev).add(sender_id));
+    });
+
+    socketRef.current.on("stop-typing", ({ sender_id }) => {
+      setTypingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(sender_id);
+        return newSet;
+      });
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [isDemo, currentUser?.id]);
+
+
 
   const fetchChats = async () => {
     try {
+      if (isDemo) {
+        setChatlist(mockChats);
+        return;
+      }
+
       const response = await getChatsList();
       const chats = response?.data?.data;
 
-      if (!isDemo) {
-
-        const formattedChats = chats?.map(chat => {
-          const otherUserId =
-            chat.sender_id === currentUser.id
-              ? chat.receiver_id
-              : chat.sender_id;
-
+      if (chats) {
+        const sortedChats = chats.sort((a, b) => {
+          const dateA = new Date(a.updatedAt || a.createdAt);
+          const dateB = new Date(b.updatedAt || b.createdAt);
+          return dateB - dateA;
+        });
+        const formattedChats = sortedChats.map(chat => {
           return {
             id: chat.chat_id,
             user: chat.user,
-            name: chat.user?.full_name,
+            name: chat.user?.full_name || "Unknown User",
             avatar: chat.user?.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.user?.full_name}`,
             lastMessage: chat.last_message,
-            timestamp: new Date(chat.createdAt).toLocaleTimeString(),
-            unreadCount: 0,
+            timestamp: new Date(chat.updatedAt || chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            unreadCount: chat.unreadCount || 0,
             isOnline: true
           };
         });
         setChatlist(formattedChats);
       }
-      else {
-        setChatlist(mockChats);
-      }
     } catch (error) {
       console.error("Failed to fetch chats:", error);
     }
   }
-  useEffect(() => {
 
+  useEffect(() => {
     fetchChats();
-  }, []);
+  }, [isDemo]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -157,9 +180,19 @@ export default function ChatsListPage() {
     }
     fetchProfile()
   }, [])
+
   const handleChatClick = (chatId, user) => {
+    setChatlist(prev => prev.map(chat =>
+      chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+    ));
     setActiveChat(chatId)
-    navigate(`/chats/${chatId}`, { state: { isDemo, chat_id: chatId, user } })
+    navigate(`/chats/${chatId}`, {
+      state: {
+        isDemo,
+        chat_id: chatId,
+        user: user
+      }
+    })
   }
 
   const handleUserSearch = async (e) => {
@@ -178,7 +211,6 @@ export default function ChatsListPage() {
     }
   };
 
-
   const startNewChat = (user) => {
     navigate(`/chats/${user.id}`, {
       state: {
@@ -193,6 +225,12 @@ export default function ChatsListPage() {
     });
     setIsSearchOpen(false);
   };
+
+
+  const filteredChats = chatlist?.filter((chat) =>
+    (chat.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (chat.lastMessage || "").toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <div className="h-screen flex flex-col bg-background relative">
@@ -241,20 +279,35 @@ export default function ChatsListPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {filteredChats.map((chat, index) => (
-              <motion.div
-                key={chat.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-              >
-                <ChatListItem
-                  {...chat}
-                  isActive={activeChat === chat.id}
-                  onClick={() => handleChatClick(chat.id, chat.user)}
-                />
-              </motion.div>
-            ))}
+            {filteredChats.map((chat, index) => {
+
+              const isTyping = typingUsers.has(chat.user?.id);
+
+              return (
+                <motion.div
+                  key={chat.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <ChatListItem
+                    {...chat}
+
+                    lastMessage={
+                      isTyping ? (
+                        <span className="text-primary italic font-medium animate-pulse">
+                          Typing...
+                        </span>
+                      ) : (
+                        chat.lastMessage
+                      )
+                    }
+                    isActive={activeChat === chat.id}
+                    onClick={() => handleChatClick(chat.id, chat.user)}
+                  />
+                </motion.div>
+              );
+            })}
           </motion.div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -264,6 +317,7 @@ export default function ChatsListPage() {
           </div>
         )}
       </div>
+
       <div className="absolute bottom-6 right-6 p-4">
         <Button
           size="icon"
@@ -316,7 +370,7 @@ export default function ChatsListPage() {
                     >
                       <Avatar>
                         <AvatarImage src={user.profile_image} />
-                        <AvatarFallback>{user.full_name[0].toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>{user.full_name?.[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{user.full_name}</p>
@@ -337,4 +391,3 @@ export default function ChatsListPage() {
     </div>
   )
 }
-

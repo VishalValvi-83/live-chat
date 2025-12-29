@@ -128,7 +128,21 @@ export const getChatList = async (req, res) => {
                     message_type: { $first: "$message_type" },
                     sender_id: { $first: "$sender_id" },
                     receiver_id: { $first: "$receiver_id" },
-                    createdAt: { $first: "$createdAt" }
+                    createdAt: { $first: "$createdAt" },
+                    unreadCount: {
+                        $sum: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        { $eq: ["$receiver_id", user_id] },
+                                        { $eq: ["$read_at", null] }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
+                    }
                 }
             }
         ]);

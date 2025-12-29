@@ -11,10 +11,6 @@ export const sendMessage = async (req, res) => {
                 ? `${sender_id}_${receiver_id}`
                 : `${receiver_id}_${sender_id}`;
 
-        // if (!chat_id || !receiver_id || !content) {
-        //     return res.status(400).json({ message: "Missing required fields" });
-        // }
-
         const message = await Message.create({
             chat_id,
             sender_id,
@@ -26,11 +22,6 @@ export const sendMessage = async (req, res) => {
 
         const io = getIO();
         io.to(receiver_id.toString()).emit("receive-message", message);
-
-        // mark delivered
-        await Message.findByIdAndUpdate(message._id, {
-            delivered_at: new Date()
-        })
 
         return res.status(201).json({
             success: true,
