@@ -41,9 +41,14 @@ const messageSchema = new mongoose.Schema(
         read_at: {
             type: Date,
             default: null
+        },
+        reply_to: {
+            id: { type: String },
+            content: { type: String },
+            type: { type: String }
         }
     },
-    { timestamps: true } // createdAt, updatedAt automatically added
+    { timestamps: true }
 );
 
 export default mongoose.model("Message", messageSchema);

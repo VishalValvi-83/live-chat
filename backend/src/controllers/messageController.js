@@ -4,8 +4,8 @@ import { getIO } from "../websocket/index.js";
 export const sendMessage = async (req, res) => {
     try {
         const sender_id = req.user.id;
-        const { receiver_id, content, message_type } = req.body;
-        
+        const { receiver_id, content, message_type, reply_to } = req.body;
+
         const chat_id =
             sender_id < receiver_id
                 ? `${sender_id}_${receiver_id}`
@@ -16,7 +16,7 @@ export const sendMessage = async (req, res) => {
             sender_id,
             receiver_id,
             content,
-            message_type,
+            reply_to: reply_to || null,
             is_encrypted: true
         });
 

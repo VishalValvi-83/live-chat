@@ -12,7 +12,7 @@ export const getChatsList = async () => {
 export const getChatConversion = async (chatId) => {
     try {
         const response = await AxiosInstance.get(`/chat/${chatId}`)
-        console.log("conversion response: ", response)
+        // console.log("conversion response: ", response)
         return response.data;
     } catch (error) {
 

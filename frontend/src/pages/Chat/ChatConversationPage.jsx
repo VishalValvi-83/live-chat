@@ -34,7 +34,8 @@ export default function ChatConversationPage() {
   const [messages, setMessages] = useState([])
   const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(false)
-
+  // const [replyingTo, setReplyingTo] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null);
   useEffect(() => {
     socketRef.current = io(import.meta.env.VITE_SOCKET_URL);
 
@@ -122,36 +123,92 @@ export default function ChatConversationPage() {
       timestamp: new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
       isSent: msg.sender_id === myId,
       type: msg.message_type === "text" ? undefined : msg.message_type,
-      status: msg.read_at ? "read" : (msg.delivered_at ? "delivered" : "sent")
+      status: msg.read_at ? "read" : (msg.delivered_at ? "delivered" : "sent"),
+      reply_to: msg.reply_to ? {
+        id: msg.reply_to.id,
+        content: msg.reply_to.content,
+        type: msg.reply_to.type
+      } : null
+
     };
   };
-  
+
+  // const handleSendMessage = async (content, type = "text") => {
+  //   if (!content) return;
+
+
+  //   socketRef.current.emit("stop-typing", {
+  //     sender_id: currentUser.id,
+  //     receiver_id: otherUserId
+  //   });
+
+  //   const tempId = Date.now().toString();
+  //   const tempMessage = {
+  //     id: tempId,
+  //     content,
+  //     timestamp: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+  //     isSent: true,
+  //     status: "sent",
+  //     type: type,
+  //     reply_to: payload.reply_to // Show reply immediately in UI
+  //   };
+  //   setMessages((prev) => [...prev, tempMessage]);
+  //   setReplyingTo(null);
+  //   const payload = {
+  //     receiver_id: otherUserId,
+  //     content: content,
+  //     message_type: type,
+  //     reply_to: replyingTo ? {
+  //       id: replyingTo.id,
+  //       content: replyingTo.content,
+  //       type: replyingTo.type
+  //     } : null
+  //   };
+
+  //   const response = await sendMessageAPI(payload);
+  //   if (response && response.success) {
+  //     setMessages((prev) => prev.map(msg =>
+  //       msg.id === tempId ? transformSingleMessage(response.data, currentUser.id) : msg
+  //     ));
+
+  //   }
+
+  // };
+
   const handleSendMessage = async (content, type = "text") => {
-    if (!content) return; 
+    if (!content && type === "text") return;
 
-    
-    socketRef.current.emit("stop-typing", {
-      sender_id: currentUser.id,
-      receiver_id: otherUserId
-    });
+    // Payload now includes reply_to
+    const payload = {
+      receiver_id: otherUserId,
+      content: content,
+      message_type: type,
+      reply_to: replyingTo ? {
+        id: replyingTo.id,
+        content: replyingTo.content,
+        type: replyingTo.type,
+        sender_id: replyingTo.sender_id // To show "Replying to Ben"
+      } : null
+    };
 
+    // Optimistic UI Update (Temp Message)
     const tempId = Date.now().toString();
     const tempMessage = {
       id: tempId,
       content,
-      timestamp: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isSent: true,
       status: "sent",
-      type: type 
+      type: type,
+      reply_to: payload.reply_to // Show reply immediately in UI
     };
+
     setMessages((prev) => [...prev, tempMessage]);
 
-    const payload = {
-      receiver_id: otherUserId,
-      content: content,
-      message_type: type 
-    };
+    // Clear reply state immediately
+    setReplyingTo(null);
 
+    // API Call
     const response = await sendMessageAPI(payload);
     if (response && response.success) {
       setMessages((prev) => prev.map(msg =>
@@ -159,7 +216,6 @@ export default function ChatConversationPage() {
       ));
     }
   };
-
 
   const handleTyping = () => {
     if (socketRef.current && otherUserId && currentUser?.id) {
@@ -188,7 +244,18 @@ export default function ChatConversationPage() {
   }, [messages, isTyping]);
 
   if (!chatPartner && !otherUserId) return <div>Invalid Chat</div>;
-  console.log("ChatPartner:", chatPartner);
+  const handleScrollToMessage = (messageId) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      element.classList.add("bg-accent/50");
+      setTimeout(() => {
+        element.classList.remove("bg-accent/50");
+      }, 1000);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <ChatHeader
@@ -211,6 +278,14 @@ export default function ChatConversationPage() {
                   key={message.id}
                   {...message}
                   avatar={!message.isSent ? chatPartner?.profile_image : undefined}
+                  onReply={() => setReplyingTo({
+                    id: message.id,
+                    content: message.content,
+                    type: message.type || "text",
+                    sender_id: message.isSent ? currentUser.id : otherUserId,
+                    senderName: message.isSent ? "You" : chatPartner?.full_name
+                  })}
+                  onReplyClick={handleScrollToMessage}
                 />
               ))}
 
@@ -234,6 +309,8 @@ export default function ChatConversationPage() {
         onSendMessage={handleSendMessage}
         onTyping={handleTyping}
         onStopTyping={handleStopTyping}
+        replyingTo={replyingTo}
+        onCancelReply={() => setReplyingTo(null)}
       />
     </div>
   )

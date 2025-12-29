@@ -1,10 +1,12 @@
 import { motion } from "framer-motion"
-import { Check, CheckCheck, Image as ImageIcon, FileText, Mic } from "lucide-react"
+import { Check, CheckCheck, Image as ImageIcon, FileText, Mic, CornerUpLeft } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import CustomAudioPlayer from "./CustomAudioPlayer"
+import { Button } from "@/components/ui/button"
 
 export function MessageBubble({
+  id,
   content,
   timestamp,
   isSent,
@@ -12,7 +14,9 @@ export function MessageBubble({
   status = "read",
   avatar,
   userName,
-}) {
+  reply_to, // Recieved from props
+  onReply,
+  onReplyClick }) {
   const bubbleVariants = {
     hidden: { opacity: 0, y: 20, scale: 0.95 },
     visible: {
@@ -74,11 +78,14 @@ export function MessageBubble({
 
   return (
     <motion.div
+      id={`message-${id}`}
       variants={bubbleVariants}
       initial="hidden"
+      onDoubleClick={onReply}
+      // Add a gesture or button here to trigger "onSwipeToReply(props)"
       animate="visible"
       className={cn(
-        "flex gap-2 mb-3",
+        "flex gap-2 mb-3 group",
         isSent ? "flex-row-reverse" : "flex-row"
       )}
     >
@@ -99,6 +106,18 @@ export function MessageBubble({
             : "bg-primary-foreground text-card-foreground rounded-bl-md border border-border/50"
         )}
       >
+        {reply_to && (
+          <div onClick={() => onReplyClick?.(reply_to.id)}
+            className={cn(
+              "mb-2 rounded px-3 py-1.5 text-xs border-l-4 bg-black/10 cursor-pointer opacity-90 hover:opacity-100 transition-opacity",
+              isSent ? "border-white/50" : "border-primary"
+            )}>
+            <p className="font-bold opacity-80 mb-0.5">Reply to message</p>
+            <p className="line-clamp-1 opacity-70">
+              {reply_to.type === 'image' ? '📷 Photo' : reply_to.content}
+            </p>
+          </div>
+        )}
         {renderMessageContent()}
 
         <div className={cn(
@@ -114,7 +133,18 @@ export function MessageBubble({
             </span>
           )}
         </div>
+
       </div>
-    </motion.div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+        onClick={onReply}
+        title="Reply"
+      >
+        <CornerUpLeft className="h-4 w-4 text-muted-foreground" />
+      </Button>
+
+    </motion.div >
   )
 }
