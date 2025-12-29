@@ -144,7 +144,7 @@ export const searchUser = async (req, res) => {
 
 export const getProfile = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.body?.id || req.user.id;
 
         const [rows] = await mysqlDB.query(
             "SELECT id, username, full_name, email, phone, profile_image FROM users WHERE id = ?",

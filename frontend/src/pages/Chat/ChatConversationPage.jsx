@@ -385,15 +385,16 @@ export default function ChatConversationPage() {
   }, [messages, isTyping]); 
 
   if (!chatPartner && !otherUserId) return <div>Invalid Chat</div>;
-
+  console.log("ChatPartner:", chatPartner);
   return (
     <div className="h-screen flex flex-col bg-background">
       <ChatHeader
-        avatar={chatPartner?.avatar}
+        avatar={chatPartner?.profile_image}
         name={chatPartner?.full_name || "Chat"}
         status={chatPartner?.status || (isTyping ? "typing..." : "online")}
         isTyping={isTyping} 
         onBack={() => navigate("/chats")}
+        profileId={otherUserId}
       />
 
       <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>

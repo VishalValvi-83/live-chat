@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { ArrowLeft, Camera, User, Loader2, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -14,8 +14,9 @@ const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
 export default function ProfilePage() {
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
-
-
+  const location = useLocation()
+  const userID = location.state?.user_id;
+  const isChatUser = location.state?.isChatUser;
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingImg, setUploadingImg] = useState(false)
@@ -33,9 +34,17 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await getUserProfileAPI()
-        if (response.success) {
-          setFormData(response.data)
+        let response = null;
+        if (userID) {
+          const response = await getUserProfileAPI(userID)
+          if (response.success) {
+            setFormData(response.data)
+          }
+        } else {
+          response = await getUserProfileAPI()
+          if (response.success) {
+            setFormData(response.data)
+          }
         }
       } catch (error) {
         console.error("Failed to load profile", error)
@@ -140,10 +149,10 @@ export default function ProfilePage() {
             </Button>
             <h1 className="text-2xl font-bold">Profile</h1>
           </div>
-          <Button onClick={handleSave} disabled={saving}>
+          {!isChatUser && <Button onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save
-          </Button>
+          </Button>}
         </div>
       </div>
 
@@ -167,6 +176,7 @@ export default function ProfilePage() {
                 className="hidden"
                 accept="image/*"
                 onChange={handleImageUpload}
+                disabled={isChatUser}
               />
 
               {/* Camera Button */}
@@ -197,6 +207,7 @@ export default function ProfilePage() {
                 name="full_name"
                 value={formData.full_name}
                 onChange={handleChange}
+                disabled={isChatUser}
                 placeholder="Enter your name"
               />
             </div>
@@ -208,6 +219,8 @@ export default function ProfilePage() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
+                disabled={isChatUser}
+
                 placeholder="@username"
               />
             </div>
@@ -219,6 +232,8 @@ export default function ProfilePage() {
                 name="phone"
                 value={formData.phone || ""}
                 onChange={handleChange}
+                disabled={isChatUser}
+
                 placeholder="+1 234 567 890"
               />
             </div>

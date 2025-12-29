@@ -10,8 +10,15 @@ export const searchUsersAPI = async (query) => {
     }
 };
 
-export const getUserProfileAPI = async () => {
+export const getUserProfileAPI = async (userID) => {
     try {
+        if (userID) {
+            const payload = {
+                id: userID
+            }
+            const response = await axiosInstance.post("/user/profile", payload);
+            return response.data;
+        }
         const response = await axiosInstance.get("/user/profile");
         return response.data;
     } catch (error) {

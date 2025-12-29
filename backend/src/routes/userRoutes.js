@@ -10,6 +10,7 @@ router.put(
     updateProfileImage
 );
 router.get("/profile", authMiddleware, getProfile);
+router.post("/profile", authMiddleware, getProfile)
 router.patch("/profile", authMiddleware, updateProfile);
 router.get("/search", authMiddleware, searchUser);
 

@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useNavigate } from "react-router-dom"
 
 export function ChatHeader({
   avatar,
@@ -14,17 +15,20 @@ export function ChatHeader({
   status = "online",
   isTyping = false,
   onBack,
+  profileId,
 }) {
+  const navigate = useNavigate()
+
   return (
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          onClick={onBack}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="rounded-full"
+        onClick={onBack}
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
 
       <Avatar className="h-10 w-10">
         <AvatarImage src={avatar} />
@@ -56,7 +60,7 @@ export function ChatHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>View Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/profile", { state: { user_id: profileId, isChatUser: true } })} >View Profile</DropdownMenuItem>
             <DropdownMenuItem>Search Messages</DropdownMenuItem>
             <DropdownMenuItem>Mute Notifications</DropdownMenuItem>
             <DropdownMenuItem className="text-destructive">
