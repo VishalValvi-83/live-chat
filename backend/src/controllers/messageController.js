@@ -48,14 +48,12 @@ export const sendMessage = async (req, res) => {
         const sender_id = req.user.id;
         const { receiver_id, content, message_type, reply_to, scheduled_for } = req.body;
 
-        // 1. Fetch Receiver's Preferred Language
         const [users] = await mysqlDB.execute(
             "SELECT language FROM users WHERE id = ?",
             [receiver_id]
         );
         const targetLang = users[0]?.language || "en";
 
-        // 2. Translate if needed (and if type is text)
         let translatedContent = null;
         if (message_type === "text" && targetLang !== "en") {
             translatedContent = await translateText(content, targetLang);
@@ -78,7 +76,6 @@ export const sendMessage = async (req, res) => {
             status: isScheduled ? "scheduled" : "sent",
             is_encrypted: true,
 
-            // 👇 Store Translation
             translation: translatedContent ? {
                 lang: targetLang,
                 text: translatedContent
@@ -102,8 +99,8 @@ export const markAsRead = async (req, res) => {
     try {
         const user_id = req.user.id;
         const { chat_id } = req.body;
-
-        await Message.updateMany(
+        if (!chat_id) { return res.status(400).json({ message: "chat_id is required" }); }
+        const result = await Message.updateMany(
             {
                 chat_id,
                 receiver_id: user_id,
@@ -113,8 +110,7 @@ export const markAsRead = async (req, res) => {
                 read_at: new Date()
             }
         );
-
-        return res.json({ success: true });
+        return res.json({ success: true, updatedCount: result.modifiedCount });
 
     } catch (err) {
         res.status(500).json({ message: "Internal server error" });

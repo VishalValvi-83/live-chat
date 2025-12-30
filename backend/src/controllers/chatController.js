@@ -236,7 +236,8 @@ export const getChatList = async (req, res) => {
                 last_message: chat.last_message,
                 message_type: chat.message_type,
                 createdAt: chat.createdAt,
-                user: usersMap[otherUserId] || null
+                user: usersMap[otherUserId] || null,
+                unreadCount: chat.unreadCount
             };
         });
 
