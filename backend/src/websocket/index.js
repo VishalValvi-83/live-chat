@@ -1,6 +1,109 @@
+// import Message from "../models/ChatMessage.js";
+// import { Server } from "socket.io";
+// import { markUserOffline, markUserOnline } from "../services/presence.service.js";
+
+// let io = null;
+
+// export const initSocket = (server) => {
+//   io = new Server(server, {
+//     cors: {
+//       origin: "*",
+//       methods: ["GET", "POST"]
+//     }
+//   });
+
+//   io.on("connection", (socket) => {
+//     console.log("User connected:",);
+
+
+//     socket.on("join", async (userId) => {
+//       socket.userId = userId;
+//       socket.join(userId.toString());
+
+//       await markUserOnline(userId);
+//       console.log(`User ${userId} is ONLINE`);
+
+//       socket.emit("join_success", { userId, status: "online" });
+
+//       socket.broadcast.emit("user-online", { userId });
+//     });
+
+
+//     socket.on("send-message", (data) => {
+//       io.to(data.receiver_id).emit("receive-message", data);
+//     });
+
+//     socket.on("disconnect", async () => {
+//       if (socket.userId) {
+//         await markUserOffline(socket.userId);
+//         console.log(`User ${socket.userId} is OFFLINE`);
+
+//         socket.broadcast.emit("user-offline", { userId: socket.userId });
+//       }
+//     });
+//     socket.on("reconnect", async () => {
+//       if (socket.userId) {
+//         await markUserOnline(socket.userId);
+//         socket.broadcast.emit("user-online", { userId: socket.userId });
+//       }
+//     });
+
+//     socket.on("message-delivered", async ({ message_id, sender_id }) => {
+//       await Message.findByIdAndUpdate(message_id, { delivered_at: new Date() });
+
+//       io.to(sender_id.toString()).emit("message-status-update", {
+//         message_id,
+//         status: "delivered"
+//       });
+//     });
+
+//     socket.on("message-read", async ({ chat_id, sender_id }) => {
+//       await Message.updateMany(
+//         { chat_id, sender_id, read_at: null },
+//         { read_at: new Date() }
+//       );
+
+//       io.to(sender_id.toString()).emit("message-status-update", {
+//         chat_id,
+//         status: "read"
+//       });
+//     });
+
+//     socket.on("typing", ({ sender_id, receiver_id }) => {
+//       socket.to(receiver_id.toString()).emit("typing", {
+//         sender_id
+//       });
+//     });
+
+//     socket.on("stop-typing", (data) => {
+
+//       const { receiver_id, sender_id } = data;
+
+
+//       if (!receiver_id || !sender_id) return;
+
+//       socket.to(receiver_id.toString()).emit("stop-typing", {
+//         sender_id: sender_id,
+//         receiver_id: receiver_id
+//       });
+//     });
+
+//     socket.on("error", (error) => {
+//       console.error("Socket error:", error);
+//     });
+
+//   });
+
+//   return io;
+// };
+
+// export const getIO = () => io;
+
+
 import Message from "../models/ChatMessage.js";
 import { Server } from "socket.io";
 import { markUserOffline, markUserOnline } from "../services/presence.service.js";
+import jwt from "jsonwebtoken";
 
 let io = null;
 
@@ -12,24 +115,40 @@ export const initSocket = (server) => {
     }
   });
 
-  io.on("connection", (socket) => {
-    console.log("User connected:",);
 
+  io.use((socket, next) => {
+    try {
+      const token = socket.handshake.auth.token;
 
-    socket.on("join", async (userId) => {
-      socket.userId = userId;
-      socket.join(userId.toString());
+      if (!token) {
+        return next(new Error("Authentication error: No token provided"));
+      }
 
-      await markUserOnline(userId);
-      console.log(`User ${userId} is ONLINE`);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      socket.emit("join_success", { userId, status: "online" });
+      socket.userId = decoded.id;
+      next();
 
-      socket.broadcast.emit("user-online", { userId });
-    });
+    } catch (err) {
+      console.error("Socket Auth Error:", err.message);
+      next(new Error("Authentication error"));
+    }
+  });
+
+  io.on("connection", async (socket) => {
+    console.log(`User connected: ${socket.userId}`);
+
+    socket.join(socket.userId.toString());
+    await markUserOnline(socket.userId);
+
+    socket.emit("join_success", { userId: socket.userId, status: "online" });
+    socket.broadcast.emit("user-online", { userId: socket.userId });
 
 
     socket.on("send-message", (data) => {
+      if (data.sender_id !== socket.userId) {
+        return;
+      }
       io.to(data.receiver_id).emit("receive-message", data);
     });
 
@@ -37,10 +156,10 @@ export const initSocket = (server) => {
       if (socket.userId) {
         await markUserOffline(socket.userId);
         console.log(`User ${socket.userId} is OFFLINE`);
-
         socket.broadcast.emit("user-offline", { userId: socket.userId });
       }
     });
+
     socket.on("reconnect", async () => {
       if (socket.userId) {
         await markUserOnline(socket.userId);
@@ -70,17 +189,17 @@ export const initSocket = (server) => {
     });
 
     socket.on("typing", ({ sender_id, receiver_id }) => {
+      if (sender_id !== socket.userId) return;
+
       socket.to(receiver_id.toString()).emit("typing", {
         sender_id
       });
     });
 
     socket.on("stop-typing", (data) => {
-
       const { receiver_id, sender_id } = data;
-
-
       if (!receiver_id || !sender_id) return;
+      if (sender_id !== socket.userId) return;
 
       socket.to(receiver_id.toString()).emit("stop-typing", {
         sender_id: sender_id,
@@ -91,7 +210,6 @@ export const initSocket = (server) => {
     socket.on("error", (error) => {
       console.error("Socket error:", error);
     });
-
   });
 
   return io;

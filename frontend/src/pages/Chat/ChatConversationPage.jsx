@@ -45,11 +45,11 @@ export default function ChatConversationPage() {
 
 
   useEffect(() => {
-    socketRef.current = io(import.meta.env.VITE_SOCKET_URL);
+    const token = sessionStorage.getItem("authToken");
 
-    if (currentUser?.id) {
-      socketRef.current.emit("join", currentUser.id);
-    }
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL, {
+      auth: { token }
+    });
 
     socketRef.current.on("receive-message", (newMessage) => {
       if (newMessage.chat_id === chat_id) {

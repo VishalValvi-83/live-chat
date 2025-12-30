@@ -135,36 +135,42 @@ export default function ChatsListPage() {
   // }, [isDemo, currentUser?.id]);
 
 
-  // Socket Logic
   useEffect(() => {
     if (isDemo || !currentUser?.id) return;
 
-    // 1. Connect
-    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
 
-    // 2. Join Room
-    socketRef.current.emit("join", currentUser.id);
+    const token = sessionStorage.getItem("authToken");
+
+    if (!token) {
+      console.error("No token found, cannot connect socket");
+      return;
+    }
+
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
+      auth: {
+        token: token
+      }
+    });
+
+    socketRef.current.on("connect_error", (err) => {
+    });
 
     socketRef.current.on("join_success", () => {
       setIsOnline(true);
     });
 
-    // 3. Listen for Messages (Your existing logic)
     socketRef.current.on("receive-message", (newMessage) => {
-      // Notify Sender
       socketRef.current.emit("message-delivered", {
         message_id: newMessage._id,
         sender_id: newMessage.sender_id
       });
 
-      // Remove from typing list
       setTypingUsers(prev => {
         const newSet = new Set(prev);
         newSet.delete(newMessage.sender_id);
         return newSet;
       });
 
-      // Update Chat List (Move to top)
       setChatlist(prevChats => {
         const existingChatIndex = prevChats.findIndex(c => c.id === newMessage.chat_id);
 
@@ -180,13 +186,13 @@ export default function ChatsListPage() {
           newChats.splice(existingChatIndex, 1);
           return [updatedChat, ...newChats];
         } else {
-          fetchChats(); // New chat started
+          fetchChats();
           return prevChats;
         }
       });
     });
 
-  
+
     socketRef.current.on("typing", ({ sender_id }) => {
       setTypingUsers(prev => new Set(prev).add(sender_id));
     });
@@ -199,10 +205,10 @@ export default function ChatsListPage() {
       });
     });
 
-  
+
     socketRef.current.on("user-online", ({ userId }) => {
       setChatlist(prev => prev.map(chat =>
-        // Check if this chat belongs to the user who just came online
+
         chat.user?.id === userId ? { ...chat, isOnline: true } : chat
       ));
     });
@@ -213,7 +219,7 @@ export default function ChatsListPage() {
       ));
     });
 
-    // Cleanup
+
     return () => {
       socketRef.current?.disconnect();
     };
