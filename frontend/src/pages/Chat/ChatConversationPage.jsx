@@ -19,12 +19,12 @@ export default function ChatConversationPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const prevMessagesLength = useRef(0);
   const scrollRef = useRef(null)
   const messagesEndRef = useRef(null);
-
-
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
 
   const currentUser = getCurrentUser();
   const otherUserId = location.state?.user?.id;
@@ -34,8 +34,16 @@ export default function ChatConversationPage() {
   const [messages, setMessages] = useState([])
   const [isTyping, setIsTyping] = useState(false)
   const [loading, setLoading] = useState(false)
-  // const [replyingTo, setReplyingTo] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+  useEffect(() => {
+    prevMessagesLength.current = 0;
+  }, [chat_id]);
+
+
   useEffect(() => {
     socketRef.current = io(import.meta.env.VITE_SOCKET_URL);
 
@@ -45,7 +53,13 @@ export default function ChatConversationPage() {
 
     socketRef.current.on("receive-message", (newMessage) => {
       if (newMessage.chat_id === chat_id) {
-        setMessages((prev) => [...prev, transformSingleMessage(newMessage, currentUser.id)]);
+        setMessages((prev) => {
+          // 👇 Safety Check: If we already have this message ID, ignore it
+          if (prev.some(msg => msg.id === newMessage._id)) {
+            return prev;
+          }
+          return [...prev, transformSingleMessage(newMessage, currentUser.id)];
+        });
         setIsTyping(false);
 
         socketRef.current.emit("message-delivered", {
@@ -60,7 +74,11 @@ export default function ChatConversationPage() {
       }
     });
 
-
+    socketRef.current.on("message-sent-confirmed", ({ id, status }) => {
+      setMessages(prev => prev.map(msg =>
+        msg.id === id ? { ...msg, status: status } : msg
+      ));
+    });
     socketRef.current.on("message-status-update", ({ message_id, chat_id, status }) => {
       setMessages(prev => prev.map(msg => {
 
@@ -89,21 +107,23 @@ export default function ChatConversationPage() {
   }, [chat_id, currentUser?.id, otherUserId]);
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const loadInitialMessages = async () => {
       if (!chat_id) return;
-      setLoading(true);
+
+      setLoading(true); // Show big loader only on first load
       try {
-        const response = await getChatConversion(chat_id);
+        setPage(1);
+        // Fetch Page 1
+        const response = await getChatConversion(chat_id, 1);
+
         if (response.success && response.data) {
           const formatted = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
           setMessages(formatted);
+          setHasMore(response.hasMore); // Backend tells us if more exist
 
-
+          // Emit read status
           if (socketRef.current && otherUserId) {
-            socketRef.current.emit("message-read", {
-              chat_id,
-              sender_id: otherUserId
-            });
+            socketRef.current.emit("message-read", { chat_id, sender_id: otherUserId });
           }
         }
       } catch (error) {
@@ -112,8 +132,63 @@ export default function ChatConversationPage() {
         setLoading(false);
       }
     };
-    fetchHistory();
+    loadInitialMessages();
   }, [chat_id]);
+
+  const loadMoreMessages = async () => {
+    if (!hasMore || isFetchingMore) return;
+
+    setIsFetchingMore(true);
+    const nextPage = page + 1;
+
+    const scrollContainer = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    const oldHeight = scrollContainer?.scrollHeight;
+    const oldTop = scrollContainer?.scrollTop;
+
+    try {
+      const response = await getChatConversion(chat_id, nextPage);
+
+      if (response.success && response.data.length > 0) {
+        const newMessages = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
+
+        setMessages(prev => {
+
+          const existingIds = new Set(prev.map(m => m.id));
+
+
+          const uniqueNewMessages = newMessages.filter(msg => !existingIds.has(msg.id));
+
+          return [...uniqueNewMessages, ...prev];
+        });
+
+        setPage(nextPage);
+        setHasMore(response.hasMore);
+
+
+        setTimeout(() => {
+          if (scrollContainer) {
+            const newHeight = scrollContainer.scrollHeight;
+            scrollContainer.scrollTop = newHeight - oldHeight + oldTop;
+          }
+        }, 0);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Failed to load more", error);
+    } finally {
+      setIsFetchingMore(false);
+    }
+  };
+
+
+  const handleScroll = (e) => {
+    const { scrollTop } = e.currentTarget;
+
+    if (scrollTop === 0 && hasMore && !loading && !isFetchingMore) {
+      loadMoreMessages();
+    }
+  };
 
 
   const transformSingleMessage = (msg, myId) => {
@@ -178,7 +253,7 @@ export default function ChatConversationPage() {
   const handleSendMessage = async (content, type = "text", scheduledFor = null) => {
     if (!content && type === "text") return;
 
-    // Payload now includes reply_to
+
     const payload = {
       receiver_id: otherUserId,
       content: content,
@@ -188,12 +263,11 @@ export default function ChatConversationPage() {
         id: replyingTo.id,
         content: replyingTo.content,
         type: replyingTo.type,
-        sender_id: replyingTo.sender_id // To show "Replying to Ben"
+        sender_id: replyingTo.sender_id
       } : null
 
     };
 
-    // Optimistic UI Update (Temp Message)
     const tempId = Date.now().toString();
     const tempMessage = {
       id: tempId,
@@ -202,15 +276,15 @@ export default function ChatConversationPage() {
       isSent: true,
       status: scheduledFor ? "scheduled" : "sent",
       type: type,
-      reply_to: payload.reply_to // Show reply immediately in UI
+      reply_to: payload.reply_to
     };
 
     setMessages((prev) => [...prev, tempMessage]);
 
-    // Clear reply state immediately
+
     setReplyingTo(null);
 
-    // API Call
+
     const response = await sendMessageAPI(payload);
     if (response && response.success) {
       setMessages((prev) => prev.map(msg =>
@@ -239,13 +313,40 @@ export default function ChatConversationPage() {
 
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+
+    const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+
+    if (!viewport || isFetchingMore) return;
+
+    const currentLength = messages.length;
+    const prevLength = prevMessagesLength.current;
+
+    if (prevLength === 0 && currentLength > 0) {
+      setTimeout(() => {
+        viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'auto' });
+      }, 100);
     }
-  }, [messages, isTyping]);
+
+    else if (currentLength > prevLength) {
+      const lastMessage = messages[messages.length - 1];
+      const isMyMessage = lastMessage?.isSent;
+
+      const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      const isNearBottom = distanceFromBottom < 200;
+
+      if (isMyMessage || isNearBottom) {
+        setTimeout(() => {
+          viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+        }, 100);
+      }
+    }
+
+    prevMessagesLength.current = currentLength;
+
+  }, [messages, isFetchingMore]);
 
   if (!chatPartner && !otherUserId) return <div>Invalid Chat</div>;
+
   const handleScrollToMessage = (messageId) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
@@ -269,8 +370,16 @@ export default function ChatConversationPage() {
         profileId={otherUserId}
       />
 
-      <ScrollArea className="flex-1 px-4 py-6" ref={scrollRef}>
+      <ScrollArea
+        className="flex-1 px-4 py-6"
+        onScrollCapture={handleScroll}
+        ref={scrollRef}>
         <div className="max-w-4xl mx-auto">
+          {isFetchingMore && (
+            <div className="flex justify-center py-2 mb-2">
+              <span className="text-xs text-muted-foreground animate-pulse">Loading history...</span>
+            </div>
+          )}
           {loading ? (
             <p className="text-center text-muted-foreground mt-4">Loading messages...</p>
           ) : (

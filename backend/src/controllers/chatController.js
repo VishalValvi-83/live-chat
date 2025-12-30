@@ -1,21 +1,33 @@
 import Message from "../models/ChatMessage.js";
 import { mysqlDB } from "../config/mysql.js";
 
-export const getChat = async (req, res) => {
-    try {
-        const { chat_id } = req.params;
+// 30/12/2025 10:53
+// export const getChat = async (req, res) => {
+//     try {
+//         const { chat_id } = req.params;
 
-        const messages = await Message.find({ chat_id })
-            .sort({ createdAt: 1 });
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 20;
+//         const skip = (page - 1) * limit;
 
-        res.status(200).json({
-            success: true,
-            data: messages
-        });
-    } catch (err) {
-        res.status(500).json({ message: "Server error" });
-    }
-};
+//         const messages = await Message.find({ chat_id })
+//             .sort({ createdAt: -1 })
+//             .skip(skip)
+//             .limit(limit);
+
+//         const reversedMessages = messages.reverse();
+
+//         res.status(200).json({
+//             success: true,
+//             data: reversedMessages,
+
+//             hasMore: messages.length === limit,
+//             page: page
+//         });
+//     } catch (err) {
+//         res.status(500).json({ message: "Server error" });
+//     }
+// };
 
 // export const getChatList = async (req, res) => {
 //     try {
@@ -109,6 +121,42 @@ export const getChat = async (req, res) => {
 //     }
 // };
 
+export const getChat = async (req, res) => {
+    try {
+        const { chat_id } = req.params;
+        const currentUserId = req.user.id;
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const messages = await Message.find({
+            chat_id,
+            $or: [
+                { sender_id: currentUserId },
+                { receiver_id: currentUserId }
+            ]
+        })
+            .sort({ createdAt: -1 }) 
+            .skip(skip)              
+            .limit(limit);          
+
+        const reversedMessages = messages.reverse();
+
+        const hasMore = messages.length === limit;
+
+        res.status(200).json({
+            success: true,
+            data: reversedMessages,
+            hasMore,
+            page
+        });
+
+    } catch (err) {
+        console.error("GetChat Error:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
 
 export const getChatList = async (req, res) => {
     try {
