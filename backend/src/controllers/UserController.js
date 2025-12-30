@@ -1,6 +1,5 @@
 import { mysqlDB } from "../config/mysql.js";
 
-
 export const updateProfileImage = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -31,7 +30,7 @@ export const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const { full_name, phone, profile_image, username, email } = req.body;
+        const { full_name, phone, profile_image, username, email, bio, location } = req.body;
 
         const updates = {};
 
@@ -58,6 +57,9 @@ export const updateProfile = async (req, res) => {
 
         if (phone !== undefined) updates.phone = phone;
         if (profile_image !== undefined) updates.profile_image = profile_image;
+        
+        if (bio !== undefined) updates.bio = bio;
+        if (location !== undefined) updates.location = location;
 
         const keys = Object.keys(updates);
         if (keys.length === 0) {
@@ -94,7 +96,7 @@ export const updateProfile = async (req, res) => {
 
 
         const [rows] = await mysqlDB.execute(
-            `SELECT id, username, full_name, email, phone, profile_image 
+            `SELECT id, username, full_name, email, phone, profile_image, bio, location 
             FROM users WHERE id = ?`,
             [userId]
         );
@@ -111,8 +113,6 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-
-// 👇 ADD THIS FUNCTION AT THE BOTTOM OF THE FILE
 export const searchUser = async (req, res) => {
     try {
         const { query } = req.query;
@@ -147,7 +147,7 @@ export const getProfile = async (req, res) => {
         const userId = req.body?.id || req.user.id;
 
         const [rows] = await mysqlDB.query(
-            "SELECT id, username, full_name, email, phone, profile_image FROM users WHERE id = ?",
+            "SELECT id, username, full_name, email, phone, profile_image, bio, location FROM users WHERE id = ?",
             [userId]
         );
 
