@@ -14,7 +14,7 @@ export function MessageBubble({
   status = "read",
   avatar,
   userName,
-  reply_to, // Recieved from props
+  reply_to,
   onReply,
   onReplyClick,
   translation }) {

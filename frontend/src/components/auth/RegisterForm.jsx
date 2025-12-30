@@ -287,7 +287,7 @@ export function RegisterForm({ onSubmit, onLoginClick }) {
         <motion.button
           type="button"
           onClick={onLoginClick}
-          className="font-medium text-blue-500 hover:text-blue-600 transition-colors underline-offset-2 hover:underline"
+          className="font-medium text-primary hover:text-primary/60 transition-colors underline-offset-2 hover:underline"
           whileTap={{ scale: 0.96 }}
         >
           Sign in

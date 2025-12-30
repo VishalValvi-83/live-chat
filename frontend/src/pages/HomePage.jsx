@@ -1575,7 +1575,6 @@ import { usePreloader } from "@/App"
 import { useTheme } from "@/hooks/useTheme"
 import Footer from "../components/layout/Footer"
 
-// Import separated sections
 import HeroSection from "../components/home/HeroSection"
 import CommunicationSection from "../components/home/CommunicationSection"
 import FeaturesSection from "../components/home/FeaturesSection"
@@ -1591,7 +1590,6 @@ export default function HomePage() {
   const { resolvedTheme, getAccentHex, getBackgroundColor } = useTheme()
   const containerRef = useRef(null)
 
-  // Cursor Logic
   const cursorX = useMotionValue(0)
   const cursorY = useMotionValue(0)
   const springConfig = { damping: 25, stiffness: 150 }

@@ -39,7 +39,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-around bg-gradient-to-br from-blue-50 via-white to-violet-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 px-4 py-8 relative overflow-hidden">
+    <div className="min-h-screen w-full flex flex-wrap items-center justify-around bg-gradient-to-br from-blue-50 via-white to-violet-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 px-4 py-8 relative overflow-hidden">
       {/* Animated background shapes */}
       <div className="bg-shape absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full opacity-10"></div>
       <div className="bg-shape absolute bottom-20 right-20 w-48 h-48 bg-violet-200 rounded-full opacity-10"></div>
@@ -59,8 +59,8 @@ export default function RegisterPage() {
           whileHover={{ scale: 1.05 }}
           transition={{ type: "spring", stiffness: 300 }}
         >
-          <MessageCircle className="h-8 w-8 text-blue-500" />
-          <span className="font-bold text-2xl bg-gradient-to-r from-blue-500 to-violet-500 bg-clip-text text-transparent">
+          <MessageCircle className="h-8 w-8 text-primary" />
+          <span className="font-bold text-2xl bg-gradient-to-r from-primary/60 to-primary/95 bg-clip-text text-transparent">
             VoxenApp
           </span>
         </motion.div>
@@ -110,9 +110,6 @@ export default function RegisterPage() {
             </div>
           </div>
         </motion.div>
-
-        {/* Register Form */}
-
       </motion.div>
       <motion.div
         className="w-full max-w-md"

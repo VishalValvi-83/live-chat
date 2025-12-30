@@ -4,6 +4,7 @@ import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, Globe, Loader2 } from "
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea" 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "react-toastify"
 import { updateLang, getUserProfileAPI, updateUserProfileAPI } from "../../../api/userApi"
@@ -22,11 +23,11 @@ export default function AccountSettingsPage() {
     name: sessionUser.full_name || "",
     email: sessionUser.email || "",
     phone: sessionUser.phone || "",
-    location: sessionUser.location || "", // Initialize from session
-    bio: sessionUser.bio || ""           // Initialize from session
+    location: sessionUser.location || "", 
+    bio: sessionUser.bio || ""           
   })
 
-  // 1. Fetch real user data on mount
+  
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true);
@@ -39,8 +40,8 @@ export default function AccountSettingsPage() {
             name: user.full_name || "",
             email: user.email || "",
             phone: user.phone || "",
-            location: user.location || "", // Map from API
-            bio: user.bio || ""           // Map from API
+            location: user.location || "", 
+            bio: user.bio || ""           
           }));
           setProfileImage(user.profile_image);
 
@@ -61,7 +62,7 @@ export default function AccountSettingsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  // 2. Save changes to Backend
+  
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -69,8 +70,8 @@ export default function AccountSettingsPage() {
         full_name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        location: formData.location, // Send to backend
-        bio: formData.bio            // Send to backend
+        location: formData.location, 
+        bio: formData.bio            
       };
 
       const response = await updateUserProfileAPI(payload);
@@ -197,7 +198,7 @@ export default function AccountSettingsPage() {
 
             <div className="space-y-2">
               <Label htmlFor="bio">Bio <span className="text-gray-500 text-xs">(Optional)</span></Label>
-              <Input
+              <Textarea
                 id="bio"
                 name="bio"
                 value={formData.bio}
