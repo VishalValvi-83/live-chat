@@ -55,6 +55,10 @@ const messageSchema = new mongoose.Schema(
             type: String,
             enum: ["sent", "delivered", "read", "scheduled"],
             default: "sent"
+        },
+        translation: {
+            lang: { type: String },
+            text: { type: String }
         }
     },
     { timestamps: true }

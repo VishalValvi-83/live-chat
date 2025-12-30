@@ -43,3 +43,10 @@ export const updateProfileImageAPI = async (data) => {
         return { success: false, message: error.response?.data?.message || "Image update failed" };
     }
 };
+
+export const updateLang = async (lang) => {
+    try {
+        await axiosInstance.put("/user/language", { language: lang });
+    } catch (error) {
+    }
+}

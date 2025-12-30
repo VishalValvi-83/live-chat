@@ -16,7 +16,8 @@ export function MessageBubble({
   userName,
   reply_to, // Recieved from props
   onReply,
-  onReplyClick }) {
+  onReplyClick,
+  translation }) {
   const bubbleVariants = {
     hidden: { opacity: 0, y: 20, scale: 0.95 },
     visible: {
@@ -120,6 +121,16 @@ export function MessageBubble({
         )}
         {renderMessageContent()}
 
+        {!isSent && translation && translation.lang != 'en' && (
+          <div className={`mt-2 pt-2 border-t ${isSent ? "border-white/20" : "border-black/10"}`}>
+            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5 flex items-center gap-1">
+              Translated ({translation.lang})
+            </p>
+            <p className="text-sm italic opacity-95">
+              {translation.text}
+            </p>
+          </div>
+        )}
         <div className={cn(
           "flex items-center justify-end gap-1 mt-1.5",
           isSent ? "text-white/70" : "text-muted-foreground"

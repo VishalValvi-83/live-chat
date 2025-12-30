@@ -1,13 +1,17 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, User, Mail, Phone, MapPin, Calendar } from "lucide-react"
+import { ArrowLeft, User, Mail, Phone, MapPin, Calendar, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "react-toastify"
+import { updateLang } from "../../../api/userApi"
 
 export default function AccountSettingsPage() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false);
+  const [language, setLanguage] = useState( sessionStorage.getItem("language") ||sessionStorage.getItem("user").language || "en");
   const [formData, setFormData] = useState({
     name: "Your Name",
     email: "your.email@example.com",
@@ -21,9 +25,23 @@ export default function AccountSettingsPage() {
   }
 
   const handleSave = () => {
-    alert("Account settings saved!")
+    toast.success("Account settings saved!")
   }
 
+  const handleLanguageChange = async (e) => {
+    const newLang = e.target.value;
+    setLanguage(newLang);
+    setLoading(true);
+    try {
+      await updateLang(newLang);
+      sessionStorage.setItem("language", newLang);
+      toast.success("Language updated! Future messages will be translated.");
+    } catch (error) {
+      console.error("Failed to update language", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="h-screen flex flex-col bg-background">
       <div className="border-b border-border bg-card/50 backdrop-blur-sm px-4 py-4">
@@ -126,6 +144,32 @@ export default function AccountSettingsPage() {
             <Button onClick={handleSave} className="w-full">
               Save Changes
             </Button>
+            <div className="space-y-4 pt-4 border-t border-border">
+              <h2 className="text-lg font-medium flex items-center gap-2">
+                <Globe className="h-5 w-5 text-primary" />
+                Language Preferences
+              </h2>
+
+              <div className="grid gap-2">
+                <Label htmlFor="language">Translate Incoming Messages To:</Label>
+                <select
+                  id="language"
+                  value={language}
+                  onChange={handleLanguageChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="en">English (Original)</option>
+                  <option value="es">Spanish (Español)</option>
+                  <option value="fr">French (Français)</option>
+                  <option value="de">German (Deutsch)</option>
+                  <option value="hi">Hindi (हिंदी)</option>
+                  <option value="zh">Chinese (中文)</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Messages sent to you will be automatically translated to this language.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

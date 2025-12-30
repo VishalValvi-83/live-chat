@@ -203,8 +203,8 @@ export default function ChatConversationPage() {
         id: msg.reply_to.id,
         content: msg.reply_to.content,
         type: msg.reply_to.type
-      } : null
-
+      } : null,
+      translation: msg.translation || null
     };
   };
 
