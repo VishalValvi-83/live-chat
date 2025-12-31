@@ -303,8 +303,30 @@ export const getChatList = async (req, res) => {
                     message_type: { $first: "$message_type" },
                     sender_id: { $first: "$sender_id" },
                     receiver_id: { $first: "$receiver_id" },
-                    status: { $first: "$status" },
                     createdAt: { $first: "$createdAt" },
+
+                    status: {
+                        $first: {
+                            $cond: {
+                                if: { $eq: ["$status", "scheduled"] },
+                                then: "scheduled",
+                                else: {
+                                    $cond: {
+                                        if: { $ne: ["$read_at", null] },
+                                        then: "read",
+                                        else: {
+                                            $cond: {
+                                                if: { $ne: ["$delivered_at", null] },
+                                                then: "delivered",
+                                                else: "sent"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+
                     unreadCount: {
                         $sum: {
                             $cond: [
@@ -362,7 +384,7 @@ export const getChatList = async (req, res) => {
                 chat_id: chat._id,
                 last_message: chat.last_message,
                 message_type: chat.message_type,
-                status: chat.status,      
+                status: chat.status,
                 sender_id: chat.sender_id,
                 createdAt: chat.createdAt,
                 user: usersMap[otherUserId] || null,

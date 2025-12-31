@@ -54,7 +54,6 @@ export default function ChatConversationPage() {
     socketRef.current.on("receive-message", (newMessage) => {
       if (newMessage.chat_id === chat_id) {
         setMessages((prev) => {
-          // 👇 Safety Check: If we already have this message ID, ignore it
           if (prev.some(msg => msg.id === newMessage._id)) {
             return prev;
           }
@@ -79,16 +78,29 @@ export default function ChatConversationPage() {
         msg.id === id ? { ...msg, status: status } : msg
       ));
     });
+
     socketRef.current.on("message-status-update", ({ message_id, chat_id, status }) => {
       setMessages(prev => prev.map(msg => {
 
+        // Helper: Logic to prevent downgrading status
+        const shouldUpdate = (currentStatus, newStatus) => {
+          if (currentStatus === "read") return false; // If Read, stay Read.
+          if (currentStatus === "delivered" && newStatus === "sent") return false;
+          return true;
+        };
+
+        // Case 1: Specific Message Update (e.g. Delivered)
         if (message_id && msg.id === message_id) {
+          // Only update if it's an "upgrade" (e.g., sent -> delivered)
+          if (!shouldUpdate(msg.status, status)) return msg;
           return { ...msg, status };
         }
 
+        // Case 2: Bulk Read Update (e.g. User opened chat)
         if (chat_id && msg.isSent && status === "read") {
           return { ...msg, status: "read" };
         }
+
         return msg;
       }));
     });
@@ -110,18 +122,18 @@ export default function ChatConversationPage() {
     const loadInitialMessages = async () => {
       if (!chat_id) return;
 
-      setLoading(true); // Show big loader only on first load
+      setLoading(true);
       try {
         setPage(1);
-        // Fetch Page 1
+
         const response = await getChatConversion(chat_id, 1);
 
         if (response.success && response.data) {
           const formatted = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
           setMessages(formatted);
-          setHasMore(response.hasMore); // Backend tells us if more exist
+          setHasMore(response.hasMore);
 
-          // Emit read status
+
           if (socketRef.current && otherUserId) {
             socketRef.current.emit("message-read", { chat_id, sender_id: otherUserId });
           }
@@ -198,7 +210,11 @@ export default function ChatConversationPage() {
       timestamp: new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
       isSent: msg.sender_id === myId,
       type: msg.message_type === "text" ? undefined : msg.message_type,
-      status: msg.status === "scheduled" ? "scheduled" : (msg.delivered_at ? "delivered" : "sent"),
+
+      status: msg.status === "scheduled"
+        ? "scheduled"
+        : (msg.read_at ? "read" : (msg.delivered_at ? "delivered" : "sent")),
+
       reply_to: msg.reply_to ? {
         id: msg.reply_to.id,
         content: msg.reply_to.content,
