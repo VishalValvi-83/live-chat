@@ -167,13 +167,29 @@ export const initSocket = (server) => {
       }
     });
 
-    socket.on("message-delivered", async ({ message_id, sender_id }) => {
-      await Message.findByIdAndUpdate(message_id, { delivered_at: new Date() });
+    // socket.on("message-delivered", async ({ message_id, sender_id }) => {
+    //   await Message.findByIdAndUpdate(message_id, { delivered_at: new Date() });
 
-      io.to(sender_id.toString()).emit("message-status-update", {
+    //   io.to(sender_id.toString()).emit("message-status-update", {
+    //     message_id,
+    //     status: "delivered"
+    //   });
+    // });
+
+    socket.on("message-delivered", async ({ message_id, sender_id }) => {
+      const message = await Message.findByIdAndUpdate(
         message_id,
-        status: "delivered"
-      });
+        { delivered_at: new Date() },
+        { new: true }
+      );
+
+      if (message) {
+        io.to(sender_id.toString()).emit("message-status-update", {
+          chat_id: message.chat_id,
+          message_id: message._id,
+          status: "delivered"
+        });
+      }
     });
 
     socket.on("message-read", async ({ chat_id, sender_id }) => {

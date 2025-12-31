@@ -2,7 +2,7 @@ import { motion } from "framer-motion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-
+import { Clock, Check, CheckCheck } from "lucide-react"
 export function ChatListItem({
   id,
   avatar,
@@ -12,6 +12,8 @@ export function ChatListItem({
   unreadCount = 0,
   isOnline = false,
   isActive = false,
+  status,
+  isSender,
   onClick,
 }) {
   return (
@@ -41,7 +43,21 @@ export function ChatListItem({
           <h3 className="font-semibold text-sm truncate">{name}</h3>
           <span className="text-xs text-muted-foreground">{timestamp}</span>
         </div>
-        <p className="text-sm text-muted-foreground truncate">{lastMessage}</p>
+        <div className="flex items-center gap-1 text-sm text-muted-foreground truncate">
+          {isSender && status === "scheduled" && (
+            <Clock className="w-3.5 h-3.5 text-primary/60 shrink-0 align-middle" />
+          )}
+          {isSender && status === "sent" && (
+            <Check className="w-3.5 h-3.5 text-muted-foreground shrink-0 align-middle" />
+          )}
+          {isSender && status === "delivered" && (
+            <CheckCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0 align-middle" />
+          )}
+          {isSender && status === "read" && (
+            <CheckCheck className="w-3.5 h-3.5 text-primary/60 shrink-0  align-middle" />
+          )}
+          <span className="truncate">{lastMessage}</span>
+        </div>
       </div>
 
       {unreadCount > 0 && (

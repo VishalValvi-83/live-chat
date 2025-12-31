@@ -130,16 +130,29 @@ export const getChat = async (req, res) => {
         const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
 
+        // const messages = await Message.find({
+        //     chat_id,
+        //     $or: [
+        //         { sender_id: currentUserId },
+        //         { receiver_id: currentUserId }
+        //     ]
+        // })
+        //     .sort({ createdAt: -1 }) 
+        //     .skip(skip)              
+        //     .limit(limit);          
         const messages = await Message.find({
             chat_id,
             $or: [
-                { sender_id: currentUserId },
-                { receiver_id: currentUserId }
+                { status: { $ne: "scheduled" } },
+                {
+                    status: "scheduled",
+                    sender_id: currentUserId
+                }
             ]
         })
-            .sort({ createdAt: -1 }) 
-            .skip(skip)              
-            .limit(limit);          
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
         const reversedMessages = messages.reverse();
 
@@ -158,6 +171,112 @@ export const getChat = async (req, res) => {
     }
 };
 
+//31/12/25 14.40
+// export const getChatList = async (req, res) => {
+//     try {
+//         const user_id = Number(req.user.id);
+
+//         const chats = await Message.aggregate([
+//             {
+//                 $match: {
+//                     $and: [
+//                         {
+//                             $or: [{ sender_id: user_id }, { receiver_id: user_id }]
+//                         },
+//                         {
+//                             $or: [
+//                                 { status: { $ne: "scheduled" } }, 
+//                                 { sender_id: user_id }            
+//                             ]
+//                         }
+//                     ]
+//                 }
+//             },
+//             { $sort: { createdAt: -1 } },
+//             {
+//                 $group: {
+//                     _id: "$chat_id",
+//                     last_message: { $first: "$content" },
+//                     message_type: { $first: "$message_type" },
+//                     sender_id: { $first: "$sender_id" },
+//                     receiver_id: { $first: "$receiver_id" },
+//                     createdAt: { $first: "$createdAt" },
+//                     unreadCount: {
+//                         $sum: {
+//                             $cond: [
+//                                 {
+//                                     $and: [
+//                                         { $eq: ["$receiver_id", user_id] },
+//                                         { $eq: ["$read_at", null] }
+//                                     ]
+//                                 },
+//                                 1,
+//                                 0
+//                             ]
+//                         }
+//                     }
+//                 }
+//             }
+//         ]);
+
+//         const chatUserIds = [
+//             ...new Set(
+//                 chats
+//                     .map(chat =>
+//                         chat.sender_id === user_id
+//                             ? chat.receiver_id
+//                             : chat.sender_id
+//                     )
+//                     .filter(id => id !== user_id)
+//             )
+//         ];
+
+//         if (!chatUserIds.length) {
+//             return res.json({ success: true, data: [] });
+//         }
+
+//         const placeholders = chatUserIds.map(() => "?").join(",");
+
+//         const [users] = await mysqlDB.execute(
+//             `
+//             SELECT id, full_name, email, phone, profile_image
+//             FROM users
+//             WHERE id IN (${placeholders})
+//             `,
+//             chatUserIds
+//         );
+
+//         const usersMap = {};
+//         users.forEach(user => (usersMap[user.id] = user));
+
+//         const finalChats = chats.map(chat => {
+//             const otherUserId =
+//                 chat.sender_id === user_id
+//                     ? chat.receiver_id
+//                     : chat.sender_id;
+
+//             return {
+//                 chat_id: chat._id,
+//                 last_message: chat.last_message,
+//                 message_type: chat.message_type,
+//                 createdAt: chat.createdAt,
+//                 user: usersMap[otherUserId] || null,
+//                 unreadCount: chat.unreadCount
+//             };
+//         });
+
+//         res.json({
+//             success: true,
+//             message: "Chat list fetched successfully",
+//             data: finalChats
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: "Internal server error" });
+//     }
+// };
+
 export const getChatList = async (req, res) => {
     try {
         const user_id = Number(req.user.id);
@@ -165,7 +284,15 @@ export const getChatList = async (req, res) => {
         const chats = await Message.aggregate([
             {
                 $match: {
-                    $or: [{ sender_id: user_id }, { receiver_id: user_id }]
+                    $and: [
+                        { $or: [{ sender_id: user_id }, { receiver_id: user_id }] },
+                        {
+                            $or: [
+                                { status: { $ne: "scheduled" } },
+                                { sender_id: user_id }
+                            ]
+                        }
+                    ]
                 }
             },
             { $sort: { createdAt: -1 } },
@@ -176,6 +303,7 @@ export const getChatList = async (req, res) => {
                     message_type: { $first: "$message_type" },
                     sender_id: { $first: "$sender_id" },
                     receiver_id: { $first: "$receiver_id" },
+                    status: { $first: "$status" },
                     createdAt: { $first: "$createdAt" },
                     unreadCount: {
                         $sum: {
@@ -183,7 +311,8 @@ export const getChatList = async (req, res) => {
                                 {
                                     $and: [
                                         { $eq: ["$receiver_id", user_id] },
-                                        { $eq: ["$read_at", null] }
+                                        { $eq: ["$read_at", null] },
+                                        { $ne: ["$status", "scheduled"] }
                                     ]
                                 },
                                 1,
@@ -214,11 +343,9 @@ export const getChatList = async (req, res) => {
         const placeholders = chatUserIds.map(() => "?").join(",");
 
         const [users] = await mysqlDB.execute(
-            `
-            SELECT id, full_name, email, phone, profile_image
-            FROM users
-            WHERE id IN (${placeholders})
-            `,
+            `SELECT id, full_name, email, phone, profile_image
+             FROM users
+             WHERE id IN (${placeholders})`,
             chatUserIds
         );
 
@@ -235,6 +362,8 @@ export const getChatList = async (req, res) => {
                 chat_id: chat._id,
                 last_message: chat.last_message,
                 message_type: chat.message_type,
+                status: chat.status,      
+                sender_id: chat.sender_id,
                 createdAt: chat.createdAt,
                 user: usersMap[otherUserId] || null,
                 unreadCount: chat.unreadCount

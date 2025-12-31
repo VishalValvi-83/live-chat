@@ -2,12 +2,10 @@ import Message from "../models/ChatMessage.js";
 import { getIO } from "../websocket/index.js";
 
 export const initScheduler = () => {
-    // Check every 30 seconds
     setInterval(async () => {
         try {
             const now = new Date();
 
-            // Find messages that are scheduled AND due
             const dueMessages = await Message.find({
                 status: "scheduled",
                 scheduled_for: { $lte: now }
@@ -20,20 +18,22 @@ export const initScheduler = () => {
             const io = getIO();
 
             for (const msg of dueMessages) {
-                // 1. Emit to Receiver (if online)
                 io.to(msg.receiver_id.toString()).emit("receive-message", msg);
 
-                // 2. Emit to Sender (so their UI updates from "Clock" to "Tick")
-                io.to(msg.sender_id.toString()).emit("message-sent", msg);
+                io.to(msg.sender_id.toString()).emit("message-status-update", {
+                    message_id: msg._id,
+                    status: "sent",
+                    chat_id: msg.chat_id
+                });
 
-                // 3. Update DB
+
                 msg.status = "sent";
-                msg.scheduled_for = null; // Clear schedule
+                msg.scheduled_for = null;
                 await msg.save();
             }
 
         } catch (error) {
             console.error("Scheduler Error:", error);
         }
-    }, 30000); // 30 seconds
+    }, 30000);
 };

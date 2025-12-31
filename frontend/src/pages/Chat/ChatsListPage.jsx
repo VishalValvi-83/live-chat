@@ -138,7 +138,6 @@ export default function ChatsListPage() {
   useEffect(() => {
     if (isDemo || !currentUser?.id) return;
 
-
     const token = sessionStorage.getItem("authToken");
 
     if (!token) {
@@ -192,6 +191,17 @@ export default function ChatsListPage() {
       });
     });
 
+    socketRef.current.on("message-status-update", ({ chat_id, status }) => {
+      setChatlist(prev => prev.map(chat => {
+        if (chat.id === chat_id) {
+          return {
+            ...chat,
+            status: status
+          };
+        }
+        return chat;
+      }));
+    });
 
     socketRef.current.on("typing", ({ sender_id }) => {
       setTypingUsers(prev => new Set(prev).add(sender_id));
@@ -254,7 +264,9 @@ export default function ChatsListPage() {
             lastMessage: chat.last_message,
             timestamp: new Date(chat.updatedAt || chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             unreadCount: chat.unreadCount || 0,
-            isOnline: isOnline
+            isOnline: isOnline,
+            status: chat.status,
+            isSender: chat.sender_id === currentUser.id
           };
         });
         setChatlist(formattedChats);

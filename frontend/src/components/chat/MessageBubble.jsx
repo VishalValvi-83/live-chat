@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { Check, CheckCheck, Image as ImageIcon, FileText, Mic, CornerUpLeft } from "lucide-react"
+import { Check, CheckCheck, Image as ImageIcon, FileText, Mic, CornerUpLeft, Clock } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import CustomAudioPlayer from "./CustomAudioPlayer"
@@ -138,6 +138,7 @@ export function MessageBubble({
           <span className="text-xs text-secondary-foreground">{timestamp}</span>
           {isSent && (
             <span>
+              {status === "scheduled" && <Clock className="h-3.5 w-3.5 text-primary" />}
               {status === "sent" && <Check className="h-3.5 w-3.5" />}
               {status === "delivered" && <CheckCheck className="h-3.5 w-3.5" />}
               {status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-800" />}
