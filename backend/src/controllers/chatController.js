@@ -510,6 +510,7 @@ export const getChatList = async (req, res) => {
                     image: user?.profile_image,
                     sender_id: chat.sender_id,
                     status: chat.status,
+                    message_type: chat.message_type,
                     last_message: chat.last_message,
                     createdAt: chat.createdAt,
                     unreadCount: chat.unreadCount
