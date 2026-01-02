@@ -241,7 +241,7 @@
 
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Smile, Paperclip, Mic, Trash2, Loader2, Clock, X, Calendar, CornerUpLeft } from "lucide-react"
+import { Send, Smile, Paperclip, Mic, Trash2, Loader2, Clock, X, Calendar, CornerUpLeft, ImageIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -254,7 +254,7 @@ const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_VOICE_PRESET;
 
 export function MessageInput({ onSendMessage, onTyping, onStopTyping, replyingTo, onCancelReply }) {
   const [message, setMessage] = useState("")
-
+  const fileInputRef = useRef(null);
   // Audio State
   const [isRecording, setIsRecording] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -367,6 +367,33 @@ export function MessageInput({ onSendMessage, onTyping, onStopTyping, replyingTo
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", import.meta.env.VITE_UPLOAD_PRESET); // Use your image preset
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.secure_url) {
+        // Send as type "image"
+        onSendMessage(data.secure_url, "image");
+      }
+    } catch (error) {
+      console.error("Image upload failed", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col">
       {/* Reply Preview */}
@@ -455,9 +482,21 @@ export function MessageInput({ onSendMessage, onTyping, onStopTyping, replyingTo
                 </div>
               </PopoverContent>
             </Popover>
-
-            <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-              <Paperclip className="h-5 w-5" />
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileSelect}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()} // Trigger click
+              className="text-muted-foreground hover:text-primary"
+            >
+              <ImageIcon className="h-5 w-5" />
             </Button>
 
             <div className="flex-1 relative">

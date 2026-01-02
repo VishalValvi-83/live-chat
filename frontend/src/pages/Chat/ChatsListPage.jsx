@@ -252,21 +252,36 @@ export default function ChatsListPage() {
           return dateB - dateA;
         });
         const formattedChats = sortedChats.map(chat => {
-          if (chat.message_type === "audio") {
-            chat.last_message = "Voice Message "
-          }
+          let displayMessage = chat.last_message;
+          if (chat.message_type === "audio") displayMessage = "🎤 Voice Message";
+          if (chat.message_type === "image") displayMessage = "📷 Photo";
+
+          // 👇 NEW: Determine Name and Image based on Group vs DM
+          // The backend now sends "name" and "image" for BOTH groups and DMs (mostly)
+          // But for DMs we might still rely on the "user" object if "name" is missing
+
+          const displayName = chat.isGroup
+            ? chat.name
+            : (chat.user?.full_name || chat.name || "Unknown User");
+
+          const displayImage = chat.isGroup
+            ? (chat.image || `https://api.dicebear.com/7.x/initials/svg?seed=${displayName}`)
+            : (chat.user?.profile_image || chat.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`);
           return {
             id: chat.chat_id,
             user: chat.user,
-            name: chat.user?.full_name || "Unknown User",
-            avatar: chat.user?.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.user?.full_name}`,
+            name: displayName,
+            avatar: displayImage,
+            // name: chat.user?.full_name || "Unknown User",
+            // avatar: chat.user?.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.user?.full_name}`,
             type: chat.message_type,
-            lastMessage: chat.last_message,
+            lastMessage: displayMessage,
             timestamp: new Date(chat.updatedAt || chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             unreadCount: chat.unreadCount || 0,
-            isOnline: isOnline,
+            isOnline: !chat.isGroup && isOnline,
             status: chat.status,
-            isSender: chat.sender_id === currentUser.id
+            isSender: chat.sender_id === currentUser.id,
+            isGroup: chat.isGroup
           };
         });
         setChatlist(formattedChats);

@@ -43,51 +43,105 @@ import { mysqlDB } from "./../config/mysql.js";
 // };
 
 
+
+// 02/01/2026 16.28
+// export const sendMessage = async (req, res) => {
+//     try {
+//         const sender_id = req.user.id;
+//         const { receiver_id, content, message_type, reply_to, scheduled_for } = req.body;
+
+//         const [users] = await mysqlDB.execute(
+//             "SELECT language FROM users WHERE id = ?",
+//             [receiver_id]
+//         );
+//         const targetLang = users[0]?.language || "en";
+
+//         let translatedContent = null;
+//         if (message_type === "text" && targetLang !== "en") {
+//             translatedContent = await translateText(content, targetLang);
+//         }
+
+//         const chat_id = sender_id < receiver_id
+//             ? `${sender_id}_${receiver_id}`
+//             : `${receiver_id}_${sender_id}`;
+
+//         const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
+
+//         const message = await Message.create({
+//             chat_id,
+//             sender_id,
+//             receiver_id,
+//             content,
+//             message_type,
+//             reply_to: reply_to || null,
+//             scheduled_for: isScheduled ? new Date(scheduled_for) : null,
+//             status: isScheduled ? "scheduled" : "sent",
+//             is_encrypted: true,
+
+//             translation: translatedContent ? {
+//                 lang: targetLang,
+//                 text: translatedContent
+//             } : null
+//         });
+
+//         if (!isScheduled) {
+//             const io = getIO();
+//             io.to(receiver_id.toString()).emit("receive-message", message);
+//         }
+
+//         return res.status(201).json({ success: true, data: message });
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({ message: "Internal server error" });
+//     }
+// };
+
+
 export const sendMessage = async (req, res) => {
     try {
         const sender_id = req.user.id;
-        const { receiver_id, content, message_type, reply_to, scheduled_for } = req.body;
+        const { receiver_id, content, message_type, isGroup, group_id, scheduled_for } = req.body;
 
-        const [users] = await mysqlDB.execute(
-            "SELECT language FROM users WHERE id = ?",
-            [receiver_id]
-        );
-        const targetLang = users[0]?.language || "en";
+        let chat_id;
+        let finalReceiverId = receiver_id;
 
-        let translatedContent = null;
-        if (message_type === "text" && targetLang !== "en") {
-            translatedContent = await translateText(content, targetLang);
+        // 👇 LOGIC FOR GROUPS
+        if (isGroup && group_id) {
+            chat_id = group_id; // For groups, chat_id IS the group_id
+            finalReceiverId = null; // No single receiver
+        } else {
+            // Logic for DMs
+            chat_id = sender_id < receiver_id
+                ? `${sender_id}_${receiver_id}`
+                : `${receiver_id}_${sender_id}`;
         }
-
-        const chat_id = sender_id < receiver_id
-            ? `${sender_id}_${receiver_id}`
-            : `${receiver_id}_${sender_id}`;
 
         const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
 
         const message = await Message.create({
             chat_id,
             sender_id,
-            receiver_id,
+            receiver_id: finalReceiverId,
             content,
             message_type,
-            reply_to: reply_to || null,
-            scheduled_for: isScheduled ? new Date(scheduled_for) : null,
             status: isScheduled ? "scheduled" : "sent",
-            is_encrypted: true,
-
-            translation: translatedContent ? {
-                lang: targetLang,
-                text: translatedContent
-            } : null
+            scheduled_for: isScheduled ? new Date(scheduled_for) : null,
+            is_encrypted: true
         });
 
         if (!isScheduled) {
             const io = getIO();
-            io.to(receiver_id.toString()).emit("receive-message", message);
+            if (isGroup) {
+                // Emit to the Group Room
+                io.to(group_id).emit("receive-message", message);
+            } else {
+                // Emit to the specific User
+                io.to(receiver_id.toString()).emit("receive-message", message);
+            }
         }
 
         return res.status(201).json({ success: true, data: message });
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Internal server error" });

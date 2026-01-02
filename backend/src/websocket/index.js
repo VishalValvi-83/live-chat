@@ -270,6 +270,7 @@ import Message from "../models/ChatMessage.js";
 import { Server } from "socket.io";
 import { markUserOffline, markUserOnline } from "../services/presence.service.js";
 import jwt from "jsonwebtoken";
+import chatRoom from "../models/chatRoom.js";
 
 let io = null;
 
@@ -296,6 +297,13 @@ export const initSocket = (server) => {
 
   io.on("connection", async (socket) => {
     socket.join(socket.userId.toString());
+
+    const userGroups = await chatRoom.find({ participants: { $in: [Number(socket.userId)] } });
+    userGroups.forEach(group => {
+      socket.join(group._id.toString());
+      console.log(`User ${socket.userId} joined Group ${group.name} (${group._id})`);
+    });
+
     await markUserOnline(socket.userId);
     socket.emit("join_success", { userId: socket.userId, status: "online" });
     socket.broadcast.emit("user-online", { userId: socket.userId });
