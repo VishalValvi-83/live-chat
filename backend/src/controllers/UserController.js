@@ -1,4 +1,5 @@
 import { mysqlDB } from "../config/mysql.js";
+import { isUserOnline } from "../services/presence.service.js";
 
 export const updateProfileImage = async (req, res) => {
     try {
@@ -147,17 +148,21 @@ export const getProfile = async (req, res) => {
         const userId = req.body?.id || req.user.id;
 
         const [rows] = await mysqlDB.query(
-            "SELECT id, username, full_name, email, phone, profile_image, bio, location FROM users WHERE id = ?",
+            "SELECT id, username, full_name, email, phone, profile_image, bio, location, last_seen FROM users WHERE id = ?",
             [userId]
         );
 
         if (rows.length === 0) {
             return res.status(404).json({ message: "User not found" });
         }
-
+        const user = rows[0];
+        const isOnline = isUserOnline(user.id);
         res.json({
             success: true,
-            data: rows[0]
+            data: {
+                ...user,
+                is_online: isOnline
+            }
         });
 
     } catch (error) {

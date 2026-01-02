@@ -8,6 +8,7 @@ import { MessageInput } from "@/components/chat/MessageInput"
 import { TypingIndicator } from "@/components/chat/TypingIndicator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getChatConversion, sendMessageAPI } from "../../api/chatApi/chatsApi"
+import { getUserProfileAPI } from "../../api/userApi"
 
 
 const getCurrentUser = () => {
@@ -16,6 +17,7 @@ const getCurrentUser = () => {
 };
 
 export default function ChatConversationPage() {
+  const prevLastMessageId = useRef(null);
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
@@ -39,10 +41,24 @@ export default function ChatConversationPage() {
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
+  const [partnerStatus, setPartnerStatus] = useState("offline");
+  const [lastSeen, setLastSeen] = useState(null);
+
   useEffect(() => {
     prevMessagesLength.current = 0;
   }, [chat_id]);
 
+
+  useEffect(() => {
+    if (otherUserId) {
+      getUserProfileAPI(otherUserId).then(res => {
+        if (res.success && res.data) {
+          setPartnerStatus(res.data.is_online ? "online" : "offline");
+          setLastSeen(res.data.last_seen);
+        }
+      });
+    }
+  }, [otherUserId]);
 
   useEffect(() => {
     const token = sessionStorage.getItem("authToken");
@@ -105,6 +121,18 @@ export default function ChatConversationPage() {
       }));
     });
 
+    socketRef.current.on("user-online", ({ userId }) => {
+      if (userId === otherUserId) {
+        setPartnerStatus("online");
+      }
+    });
+
+    socketRef.current.on("user-offline", ({ userId }) => {
+      if (userId === otherUserId) {
+        setPartnerStatus("offline");
+        setLastSeen(new Date().toISOString());
+      }
+    });
 
     socketRef.current.on("typing", ({ sender_id }) => {
       if (sender_id === otherUserId) setIsTyping(true);
@@ -328,14 +356,47 @@ export default function ChatConversationPage() {
   };
 
 
+  // useEffect(() => {
+
+  //   const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+
+  //   if (!viewport || isFetchingMore) return;
+
+  //   const currentLength = messages.length;
+  //   const prevLength = prevMessagesLength.current;
+
+  //   if (prevLength === 0 && currentLength > 0) {
+  //     setTimeout(() => {
+  //       viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'auto' });
+  //     }, 100);
+  //   }
+
+  //   else if (currentLength > prevLength) {
+  //     const lastMessage = messages[messages.length - 1];
+  //     const isMyMessage = lastMessage?.isSent;
+
+  //     const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+  //     const isNearBottom = distanceFromBottom < 200;
+
+  //     if (isMyMessage || isNearBottom) {
+  //       setTimeout(() => {
+  //         viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+  //       }, 100);
+  //     }
+  //   }
+
+  //   prevMessagesLength.current = currentLength;
+
+  // }, [messages, isFetchingMore]);
+
+
   useEffect(() => {
-
     const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-
     if (!viewport || isFetchingMore) return;
 
     const currentLength = messages.length;
     const prevLength = prevMessagesLength.current;
+    const lastMessage = messages[messages.length - 1];
 
     if (prevLength === 0 && currentLength > 0) {
       setTimeout(() => {
@@ -344,20 +405,24 @@ export default function ChatConversationPage() {
     }
 
     else if (currentLength > prevLength) {
-      const lastMessage = messages[messages.length - 1];
-      const isMyMessage = lastMessage?.isSent;
 
-      const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-      const isNearBottom = distanceFromBottom < 200;
+      const isNewMessageAtBottom = lastMessage?.id !== prevLastMessageId.current;
 
-      if (isMyMessage || isNearBottom) {
-        setTimeout(() => {
-          viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-        }, 100);
+      if (isNewMessageAtBottom) {
+        const isMyMessage = lastMessage?.isSent;
+        const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+        const isNearBottom = distanceFromBottom < 200;
+
+        if (isMyMessage || isNearBottom) {
+          setTimeout(() => {
+            viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+          }, 100);
+        }
       }
     }
 
     prevMessagesLength.current = currentLength;
+    prevLastMessageId.current = lastMessage?.id;
 
   }, [messages, isFetchingMore]);
 
@@ -380,8 +445,10 @@ export default function ChatConversationPage() {
       <ChatHeader
         avatar={chatPartner?.profile_image}
         name={chatPartner?.full_name || "Chat"}
-        status={chatPartner?.status || (isTyping ? "typing..." : "online")}
+        // status={chatPartner?.status || (isTyping ? "typing..." : "online")}
         isTyping={isTyping}
+        status={partnerStatus}
+        lastSeen={lastSeen}
         onBack={() => navigate("/chats")}
         profileId={otherUserId}
       />

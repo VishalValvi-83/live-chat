@@ -9,10 +9,23 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useNavigate } from "react-router-dom"
 
+const formatLastSeen = (dateString) => {
+  if (!dateString) return "Offline";
+  const date = new Date(dateString);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  
+
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  return isToday ? `Last seen today at ${time}` : `Last seen on ${date.toLocaleDateString()} at ${time}`;
+}
+
 export function ChatHeader({
   avatar,
   name,
-  status = "online",
+  status = "offline", // Default to offline
+  lastSeen,
   isTyping = false,
   onBack,
   profileId,
@@ -41,7 +54,9 @@ export function ChatHeader({
           {isTyping ? (
             <span className="text-blue-500 font-medium">typing...</span>
           ) : (
-            status
+            status === "online"
+              ? <span className="text-green-500 font-medium">Online</span>
+              : formatLastSeen(lastSeen)
           )}
         </p>
       </div>

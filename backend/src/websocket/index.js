@@ -305,13 +305,12 @@ export const initSocket = (server) => {
       io.to(data.receiver_id).emit("receive-message", data);
     });
 
-    // 👇 FIXED: Update status to 'delivered' along with delivered_at
     socket.on("message-delivered", async ({ message_id, sender_id }) => {
       const message = await Message.findByIdAndUpdate(
         message_id,
         {
           delivered_at: new Date(),
-          status: "delivered" // <--- Added this
+          status: "delivered"
         },
         { new: true }
       );
@@ -325,13 +324,12 @@ export const initSocket = (server) => {
       }
     });
 
-    // 👇 FIXED: Update status to 'read' along with read_at
     socket.on("message-read", async ({ chat_id, sender_id }) => {
       await Message.updateMany(
         { chat_id, sender_id, read_at: null },
         {
           read_at: new Date(),
-          status: "read" // <--- Added this
+          status: "read"
         }
       );
 
@@ -341,7 +339,6 @@ export const initSocket = (server) => {
       });
     });
 
-    // ... (Keep typing, stop-typing, disconnect, error, reconnect handlers as they are)
     socket.on("typing", ({ sender_id, receiver_id }) => {
       if (sender_id !== socket.userId) return;
       socket.to(receiver_id.toString()).emit("typing", { sender_id });
