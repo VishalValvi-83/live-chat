@@ -181,6 +181,7 @@ export function MessageBubble({
   reply_to,
   onReply,
   onReplyClick,
+  onImageClick,
   translation }) {
 
   const bubbleVariants = {
@@ -203,7 +204,7 @@ export function MessageBubble({
                 src={content}
                 alt="Sent image"
                 className="max-w-full sm:max-w-sm max-h-80 rounded-lg object-cover hover:scale-[1.01] transition-transform cursor-pointer"
-                onClick={() => window.open(content, '_blank')}
+                onClick={() => onImageClick?.(content)}
                 loading="lazy"
               />
             </div>

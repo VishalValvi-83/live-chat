@@ -9,7 +9,7 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getChatConversion, sendMessageAPI } from "../../api/chatApi/chatsApi"
 import { getUserProfileAPI } from "../../api/userApi"
-
+import { ImagePreviewModal } from "@/components/ui/ImagePreviewModal";
 
 const getCurrentUser = () => {
   const userStr = sessionStorage.getItem("user");
@@ -44,6 +44,7 @@ export default function ChatConversationPage() {
   const [partnerStatus, setPartnerStatus] = useState("offline");
   const [lastSeen, setLastSeen] = useState(null);
 
+  const [previewImage, setPreviewImage] = useState(null);
   useEffect(() => {
     prevMessagesLength.current = 0;
   }, [chat_id]);
@@ -472,6 +473,7 @@ export default function ChatConversationPage() {
                   key={message.id}
                   {...message}
                   avatar={!message.isSent ? chatPartner?.profile_image : undefined}
+                  onImageClick={(src) => setPreviewImage(src)}
                   onReply={() => setReplyingTo({
                     id: message.id,
                     content: message.content,
@@ -505,6 +507,11 @@ export default function ChatConversationPage() {
         onStopTyping={handleStopTyping}
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
+      />
+      <ImagePreviewModal
+        src={previewImage}
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
       />
     </div>
   )
