@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Search, Users, Check, Loader2 } from "lucide-react";
+import { X, Search, Users, Check, Loader2, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { searchUsersAPI } from "../../api/userApi";
 import { createGroupAPI } from "../../api/chatApi/chatsApi";
 import { toast } from "react-toastify"
+
+const CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
+
 export function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
     const [step, setStep] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
@@ -16,6 +20,10 @@ export function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
     const [isSearching, setIsSearching] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
 
+    const [groupImage, setGroupImage] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef(null);
+
     useEffect(() => {
         if (isOpen) {
             setStep(1);
@@ -23,6 +31,7 @@ export function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
             setSelectedUsers([]);
             setSearchQuery("");
             setSearchResults([]);
+            setGroupImage(""); // Reset image
         }
     }, [isOpen]);
 
@@ -52,6 +61,32 @@ export function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
         }
     };
 
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+            if (data.secure_url) {
+                setGroupImage(data.secure_url);
+            }
+        } catch (error) {
+            console.error("Upload failed", error);
+            alert("Failed to upload image");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleCreateGroup = async () => {
         if (!groupName.trim() || selectedUsers.length === 0) return;
 
@@ -61,6 +96,7 @@ export function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
         const response = await createGroupAPI({
             name: groupName,
             participants: participantIds,
+            group_image: groupImage
         });
 
         setIsCreating(false);
@@ -169,9 +205,38 @@ export function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
                         ) : (
                             // Step 2: Name Group
                             <div className="py-6 space-y-6">
+
+                                {/* 👇 NEW: Image Upload Section */}
                                 <div className="flex justify-center">
-                                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center border-2 border-dashed border-muted-foreground/50">
-                                        <Users className="w-8 h-8 text-muted-foreground" />
+                                    <div className="relative group">
+                                        <div
+                                            className="w-24 h-24 bg-muted rounded-full flex items-center justify-center border-2 border-dashed border-muted-foreground/50 overflow-hidden cursor-pointer"
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            {isUploading ? (
+                                                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                                            ) : groupImage ? (
+                                                <img src={groupImage} alt="Group" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Camera className="w-8 h-8 text-muted-foreground" />
+                                            )}
+                                        </div>
+
+                                        {/* Hover Overlay */}
+                                        <div
+                                            className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <Camera className="w-6 h-6 text-white" />
+                                        </div>
+
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                        />
                                     </div>
                                 </div>
                                 <div className="space-y-2">

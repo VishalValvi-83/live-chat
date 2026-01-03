@@ -1,6 +1,6 @@
 import express from "express"
 import { authMiddleware } from './../middleware/auth.js'
-import { addGroupMember, createGroup, getChat, getChatList, getGroupDetails, removeGroupMember } from "../controllers/chatController.js";
+import { addGroupMember, createGroup, getChat, getChatList, getGroupDetails, removeGroupMember, updateGroupImage } from "../controllers/chatController.js";
 import Message from "../models/ChatMessage.js";
 import { markAsRead, sendMessage } from "../controllers/messageController.js";
 const router = express.Router();
@@ -26,5 +26,5 @@ router.post("/group/create", authMiddleware, createGroup);
 router.get("/group/:groupId", authMiddleware, getGroupDetails);
 router.post("/group/add-member", authMiddleware, addGroupMember);
 router.post("/group/remove-member", authMiddleware, removeGroupMember);
-
+router.post("/group/update-image", authMiddleware, updateGroupImage)
 export default router;

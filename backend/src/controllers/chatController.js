@@ -799,3 +799,30 @@ export const removeGroupMember = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+export const updateGroupImage = async (req, res) => {
+    try {
+        const { groupId, group_image } = req.body;
+        const currentUserId = req.user.id;
+
+        const group = await chatRoom.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found" });
+
+        if (!group.admins.includes(currentUserId)) {
+            return res.status(403).json({ message: "Only admins can change the group image" });
+        }
+
+        group.group_image = group_image;
+        await group.save();
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Group image updated successfully",
+            data: group 
+        });
+
+    } catch (error) {
+        console.error("Update Group Image Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};

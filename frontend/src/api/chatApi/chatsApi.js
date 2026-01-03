@@ -66,3 +66,12 @@ export const removeGroupMemberAPI = async (data) => {
         return { success: false, message: error.response?.data?.message || "Failed to remove member" };
     }
 }
+
+export const updateGroupImageAPI = async (data) => {
+    try {
+        const response = await AxiosInstance.post("/chat/group/update-image", data);
+        return response.data;
+    } catch (error) {
+        return { success: false, message: error.response?.data?.message || "Failed to update image" };
+    }
+}

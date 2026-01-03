@@ -4,15 +4,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getGroupDetailsAPI, addGroupMemberAPI, removeGroupMemberAPI } from "../../api/chatApi/chatsApi";
+import { getGroupDetailsAPI, addGroupMemberAPI, removeGroupMemberAPI, updateGroupImageAPI } from "../../api/chatApi/chatsApi";
 import { searchUsersAPI } from "../../api/userApi";
 import { toast } from 'react-toastify'
+
+const CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
 
 export function GroupInfoModal({ isOpen, onClose, groupId, currentUserId }) {
     const [groupDetails, setGroupDetails] = useState(null);
     const [isAdding, setIsAdding] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
+
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Fetch Details on Open
     useEffect(() => {
@@ -38,6 +44,40 @@ export function GroupInfoModal({ isOpen, onClose, groupId, currentUserId }) {
         }, 300);
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery]);
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.secure_url) {
+                // Update in Backend
+                const updateRes = await updateGroupImageAPI({
+                    groupId,
+                    group_image: data.secure_url
+                });
+
+                if (updateRes.success) {
+                    setGroupDetails(prev => ({ ...prev, group_image: data.secure_url }));
+                }
+            }
+        } catch (error) {
+            console.error("Upload failed", error);
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const handleAddMember = async (user) => {
         const res = await addGroupMemberAPI({ groupId, userId: user.id });
@@ -95,10 +135,34 @@ export function GroupInfoModal({ isOpen, onClose, groupId, currentUserId }) {
                     <div className="flex-1 overflow-y-auto p-4 space-y-6">
                         {/* Group Profile */}
                         <div className="flex flex-col items-center">
-                            <Avatar className="w-20 h-20 mb-3 border-4 border-background shadow-sm">
-                                <AvatarImage src={groupDetails?.group_image} />
-                                <AvatarFallback className="text-2xl">{groupDetails?.name?.[0]}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative group">
+                                <Avatar className="w-24 h-24 mb-3 border-4 border-background shadow-sm">
+                                    <AvatarImage src={groupDetails?.group_image} className="object-cover" />
+                                    <AvatarFallback className="text-2xl">{groupDetails?.name?.[0]}</AvatarFallback>
+                                </Avatar>
+
+                                {isAdmin && (
+                                    <div
+                                        className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer mb-3"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        {isUploading ? (
+                                            <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                        ) : (
+                                            <Camera className="w-6 h-6 text-white" />
+                                        )}
+                                    </div>
+                                )}
+
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                />
+                            </div>
+
                             <h3 className="text-xl font-bold">{groupDetails?.name}</h3>
                             <p className="text-sm text-muted-foreground">{groupDetails?.members?.length} members</p>
                         </div>
