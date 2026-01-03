@@ -155,8 +155,27 @@ export const getChat = async (req, res) => {
             .skip(skip)
             .limit(limit);
 
-        const reversedMessages = messages.reverse();
+        const senderIds = [...new Set(messages.map(m => m.sender_id))];
+        let sendersMap = {};
 
+        if (senderIds.length > 0) {
+            const placeholders = senderIds.map(() => "?").join(",");
+            const [users] = await mysqlDB.execute(
+                `SELECT id, full_name, profile_image FROM users WHERE id IN (${placeholders})`,
+                senderIds
+            );
+            users.forEach(u => sendersMap[u.id] = u);
+        }
+
+        const enrichedMessages = messages.map(msg => {
+            const sender = sendersMap[msg.sender_id];
+            return {
+                ...msg.toObject(),
+                sender: sender || null
+            };
+        });
+
+        const reversedMessages = enrichedMessages.reverse();
         const hasMore = messages.length === limit;
 
         res.status(200).json({
@@ -410,22 +429,19 @@ export const getChatList = async (req, res) => {
     try {
         const user_id = Number(req.user.id);
 
-        // 1. Fetch Groups I belong to
+
         const userGroups = await chatRoom.find({
             participants: { $in: [user_id] },
             isGroup: true
         });
         const groupIds = userGroups.map(g => g._id.toString());
 
-        // 2. Aggregate Messages (DMs + Group Messages)
         const chats = await Message.aggregate([
             {
                 $match: {
                     $or: [
-                        // Logic for DMs
                         { sender_id: user_id },
                         { receiver_id: user_id },
-                        // Logic for Groups (chat_id matches a Group ID)
                         { chat_id: { $in: groupIds } }
                     ]
                 }
@@ -440,13 +456,12 @@ export const getChatList = async (req, res) => {
                     sender_id: { $first: "$sender_id" },
                     createdAt: { $first: "$createdAt" },
 
-                    // Count unread (different logic for groups could be added here)
                     unreadCount: {
                         $sum: {
                             $cond: [
                                 {
                                     $and: [
-                                        { $ne: ["$sender_id", user_id] }, // Not my message
+                                        { $ne: ["$sender_id", user_id] },
                                         { $eq: ["$read_at", null] }
                                     ]
                                 }, 1, 0
@@ -457,31 +472,78 @@ export const getChatList = async (req, res) => {
             }
         ]);
 
-        // 3. Map Results to "Display Objects"
-        // We need to fetch User details for DMs, but use Group details for Groups.
-
-        // Find DMs (chat_id looks like "1_2")
         const dmChatIds = chats.filter(c => c._id.includes("_"));
-        const dmUserIds = [...new Set(dmChatIds.map(c => {
-            const [u1, u2] = c._id.split("_");
-            return Number(u1) === user_id ? Number(u2) : Number(u1);
-        }))];
 
-        // Fetch DM Users from MySQL
+        const dmUserIds = [...new Set(dmChatIds.map(c => {
+            let u1, u2;
+
+            if (c._id.startsWith("chat_")) {
+                const parts = c._id.split("_");
+                u1 = Number(parts[1]);
+                u2 = Number(parts[2]);
+            } else {
+                const parts = c._id.split("_");
+                u1 = Number(parts[0]);
+                u2 = Number(parts[1]);
+            }
+
+            return u1 === user_id ? u2 : u1;
+        }))].filter(id => !isNaN(id) && id !== null && id !== 0);
+
+
         let usersMap = {};
         if (dmUserIds.length > 0) {
+            const placeholders = dmUserIds.map(() => "?").join(",");
             const [users] = await mysqlDB.execute(
-                `SELECT id, full_name, profile_image, email FROM users WHERE id IN (${dmUserIds.join(",")})`
+                `SELECT id, full_name, profile_image, email FROM users WHERE id IN (${placeholders})`,
+                dmUserIds
             );
             users.forEach(u => usersMap[u.id] = u);
         }
 
-        // Map Groups for easy lookup
         const groupsMap = {};
         userGroups.forEach(g => groupsMap[g._id.toString()] = g);
 
+        // const finalChats = chats.map(chat => {
+        //     const isGroup = !chat._id.includes("_");
+
+        //     if (isGroup) {
+        //         const group = groupsMap[chat._id];
+        //         return {
+        //             chat_id: chat._id,
+        //             isGroup: true,
+        //             name: group?.name || "Unknown Group",
+        //             image: group?.group_image,
+        //             status: chat.status,
+        //             sender_id: chat.sender_id,
+        //             last_message: chat.last_message,
+        //             createdAt: chat.createdAt,
+        //             unreadCount: chat.unreadCount
+        //         };
+        //     } else {
+        //         // It is a DM
+        //         const [u1, u2] = chat._id.split("_");
+        //         const otherId = Number(u1) === user_id ? Number(u2) : Number(u1);
+        //         const user = usersMap[otherId];
+
+        //         return {
+        //             chat_id: chat._id,
+        //             isGroup: false,
+        //             user: user,
+        //             name: user?.full_name || "User",
+        //             image: user?.profile_image,
+        //             sender_id: chat.sender_id,
+        //             status: chat.status,
+        //             message_type: chat.message_type,
+        //             last_message: chat.last_message,
+        //             createdAt: chat.createdAt,
+        //             unreadCount: chat.unreadCount
+        //         };
+        //     }
+        // });
+
         const finalChats = chats.map(chat => {
-            const isGroup = !chat._id.includes("_"); // Simple check: Groups use MongoIDs, DMs use "_"
+            const isGroup = !chat._id.includes("_");
 
             if (isGroup) {
                 const group = groupsMap[chat._id];
@@ -489,29 +551,40 @@ export const getChatList = async (req, res) => {
                     chat_id: chat._id,
                     isGroup: true,
                     name: group?.name || "Unknown Group",
-                    image: group?.group_image,
-                    status: chat.status,
                     sender_id: chat.sender_id,
+                    image: group?.group_image || "",
                     last_message: chat.last_message,
+                    message_type: chat.message_type,
+                    status: chat.status,
                     createdAt: chat.createdAt,
                     unreadCount: chat.unreadCount
                 };
             } else {
-                // It is a DM
-                const [u1, u2] = chat._id.split("_");
-                const otherId = Number(u1) === user_id ? Number(u2) : Number(u1);
+                
+                let u1, u2;
+                if (chat._id.startsWith("chat_")) {
+                    const parts = chat._id.split("_");
+                    u1 = Number(parts[1]);
+                    u2 = Number(parts[2]);
+                } else {
+                    const parts = chat._id.split("_");
+                    u1 = Number(parts[0]);
+                    u2 = Number(parts[1]);
+                }
+
+                const otherId = u1 === user_id ? u2 : u1;
                 const user = usersMap[otherId];
 
                 return {
                     chat_id: chat._id,
                     isGroup: false,
-                    user: user,
-                    name: user?.full_name || "User",
+                    user: user || null,
+                    name: user?.full_name || "Unknown User",
                     image: user?.profile_image,
                     sender_id: chat.sender_id,
-                    status: chat.status,
-                    message_type: chat.message_type,
                     last_message: chat.last_message,
+                    message_type: chat.message_type,
+                    status: chat.status,
                     createdAt: chat.createdAt,
                     unreadCount: chat.unreadCount
                 };
@@ -536,16 +609,35 @@ export const createGroup = async (req, res) => {
             return res.status(400).json({ message: "Group name and participants are required" });
         }
 
-        // Add creator to participants if not already there
         const allParticipants = [...new Set([...participants, currentUserId])];
 
         const newGroup = await chatRoom.create({
             name,
             isGroup: true,
-            group_image: group_image || "", // You can use a default image URL here
+            group_image: group_image || "",
             participants: allParticipants,
             admins: [currentUserId],
             createdBy: currentUserId
+        });
+
+        const [rows] = await mysqlDB.query(
+            "SELECT id, username, full_name FROM users WHERE id = ?",
+            [currentUserId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const user = rows[0];
+
+        await Message.create({
+            chat_id: newGroup._id.toString(),
+            sender_id: currentUserId,
+            chat_alerts: `"${user.full_name}" has created group "${name}"`,
+            content: `Group "${name}" created`,
+            message_type: "text",
+            status: "sent",
+            is_encrypted: true
         });
 
         res.status(201).json({

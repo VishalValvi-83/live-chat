@@ -1,6 +1,6 @@
 import express from "express"
 import { authMiddleware } from './../middleware/auth.js'
-import { getChat, getChatList } from "../controllers/chatController.js";
+import { createGroup, getChat, getChatList } from "../controllers/chatController.js";
 import Message from "../models/ChatMessage.js";
 import { markAsRead, sendMessage } from "../controllers/messageController.js";
 const router = express.Router();
@@ -22,6 +22,6 @@ router.post("/read/:chat_id", authMiddleware, async (req, res) => {
 
 router.post("/send", authMiddleware, sendMessage);
 router.post("/read", authMiddleware, markAsRead);
-
+router.post("/group/create", authMiddleware, createGroup);
 
 export default router;

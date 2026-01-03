@@ -14,7 +14,7 @@ const formatLastSeen = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
-  
+
 
   const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -24,10 +24,11 @@ const formatLastSeen = (dateString) => {
 export function ChatHeader({
   avatar,
   name,
-  status = "offline", // Default to offline
+  status = "offline", 
   lastSeen,
   isTyping = false,
   onBack,
+  isGroup,
   profileId,
 }) {
   const navigate = useNavigate()
@@ -56,7 +57,7 @@ export function ChatHeader({
           ) : (
             status === "online"
               ? <span className="text-green-500 font-medium">Online</span>
-              : formatLastSeen(lastSeen)
+              : (isGroup ? <span className="text-gray-500 font-medium">Group Chat</span> : formatLastSeen(lastSeen))
           )}
         </p>
       </div>

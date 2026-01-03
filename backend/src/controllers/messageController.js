@@ -105,12 +105,12 @@ export const sendMessage = async (req, res) => {
         let chat_id;
         let finalReceiverId = receiver_id;
 
-        // 👇 LOGIC FOR GROUPS
+
         if (isGroup && group_id) {
-            chat_id = group_id; // For groups, chat_id IS the group_id
-            finalReceiverId = null; // No single receiver
+            chat_id = group_id;
+            finalReceiverId = null;
         } else {
-            // Logic for DMs
+
             chat_id = sender_id < receiver_id
                 ? `${sender_id}_${receiver_id}`
                 : `${receiver_id}_${sender_id}`;
@@ -130,13 +130,26 @@ export const sendMessage = async (req, res) => {
         });
 
         if (!isScheduled) {
+            // 2. 👇 NEW: Fetch Sender Details from MySQL for Real-time Display
+            const [users] = await mysqlDB.query(
+                "SELECT id, full_name, profile_image FROM users WHERE id = ?",
+                [sender_id]
+            );
+            const senderInfo = users[0] || {};
+
+            // 3. Prepare Real-time Payload
+            const socketPayload = {
+                ...message.toObject(),
+                sender: senderInfo // Attach sender info (Name/Avatar)
+            };
+
             const io = getIO();
             if (isGroup) {
-                // Emit to the Group Room
-                io.to(group_id).emit("receive-message", message);
+                // Emit to Group Room
+                io.to(group_id).emit("receive-message", socketPayload);
             } else {
-                // Emit to the specific User
-                io.to(receiver_id.toString()).emit("receive-message", message);
+                // Emit to Receiver
+                io.to(receiver_id.toString()).emit("receive-message", socketPayload);
             }
         }
 
@@ -144,7 +157,7 @@ export const sendMessage = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
 
@@ -153,15 +166,18 @@ export const markAsRead = async (req, res) => {
     try {
         const user_id = req.user.id;
         const { chat_id } = req.body;
+
         if (!chat_id) { return res.status(400).json({ message: "chat_id is required" }); }
+        
         const result = await Message.updateMany(
             {
                 chat_id,
-                receiver_id: user_id,
+                sender_id: { $ne: user_id }, 
                 read_at: null
             },
             {
-                read_at: new Date()
+                read_at: new Date(),
+                status: "read"
             }
         );
         return res.json({ success: true, updatedCount: result.modifiedCount });

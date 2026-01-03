@@ -1,37 +1,15 @@
 import { useEffect, useState, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, MessageCircle, Settings, User, UserPlus, X, Loader2 } from "lucide-react"
+import { Search, MessageCircle, Settings, User, UserPlus, X, Loader2, Users } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ChatListItem } from "@/components/chat/ChatListItem"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getChatsList } from "../../api/chatApi/chatsApi"
 import { getUserProfileAPI, searchUsersAPI } from "../../api/userApi"
+import { CreateGroupModal } from "@/components/chat/CreateGroupModal"
 import { io } from "socket.io-client"
-
-const mockChats = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-    lastMessage: "Wow! That looks amazing 🌴",
-    timestamp: "10:38 AM",
-    unreadCount: 2,
-    isOnline: true,
-  },
-  {
-    id: "2",
-    name: "Mike Chen",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike",
-    lastMessage: "Voice message",
-    timestamp: "9:22 AM",
-    unreadCount: 0,
-    isOnline: true,
-  },
-
-]
-
 
 const getCurrentUser = () => {
   try {
@@ -46,7 +24,6 @@ export default function ChatsListPage() {
   const navigate = useNavigate()
   const location = useLocation();
 
-
   const currentUser = getCurrentUser() || { id: sessionStorage.getItem("user") };
   const isDemo = location.state?.isDemo || !currentUser?.id;
 
@@ -57,101 +34,22 @@ export default function ChatsListPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeChat, setActiveChat] = useState(null)
 
-
   const [chatlist, setChatlist] = useState([])
   const [profileImage, setProfileImage] = useState("")
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [isOnline, setIsOnline] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
   const socketRef = useRef(null);
-
-
-  // useEffect(() => {
-  //   if (isDemo || !currentUser?.id) return;
-
-
-  //   socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
-
-
-  //   socketRef.current.emit("join", currentUser.id);
-  //   setIsOnline(true);
-
-  //   socketRef.current.on("join_success", () => {
-  //     setIsOnline(true);
-  //   });
-  //   socketRef.current.on("receive-message", (newMessage) => {
-
-  //     socketRef.current.emit("message-delivered", {
-  //       message_id: newMessage._id,
-  //       sender_id: newMessage.sender_id
-  //     });
-
-  //     setTypingUsers(prev => {
-  //       const newSet = new Set(prev);
-  //       newSet.delete(newMessage.sender_id);
-  //       return newSet;
-  //     });
-  //     setChatlist(prevChats => {
-  //       const existingChatIndex = prevChats.findIndex(c => c.id === newMessage.chat_id);
-
-  //       if (existingChatIndex !== -1) {
-
-  //         const updatedChat = {
-  //           ...prevChats[existingChatIndex],
-  //           lastMessage: newMessage.content,
-  //           timestamp: new Date().toLocaleTimeString(),
-  //           unreadCount: prevChats[existingChatIndex].unreadCount + 1
-  //         };
-
-  //         const newChats = [...prevChats];
-  //         newChats.splice(existingChatIndex, 1);
-  //         return [updatedChat, ...newChats];
-  //       } else {
-
-  //         fetchChats();
-  //         return prevChats;
-  //       }
-  //     });
-  //   });
-  //   socketRef.current.on("typing", ({ sender_id }) => {
-  //     setTypingUsers(prev => new Set(prev).add(sender_id));
-  //   });
-
-  //   socketRef.current.on("stop-typing", ({ sender_id }) => {
-  //     setTypingUsers(prev => {
-  //       const newSet = new Set(prev);
-  //       newSet.delete(sender_id);
-  //       return newSet;
-  //     });
-  //   });
-
-  //   socketRef.current.on("disconnect", () => {
-  //     setIsOnline(false);
-  //   });
-
-  //   return () => {
-  //     socketRef.current?.disconnect();
-  //   };
-  // }, [isDemo, currentUser?.id]);
-
 
   useEffect(() => {
     if (isDemo || !currentUser?.id) return;
 
     const token = sessionStorage.getItem("authToken");
-
-    if (!token) {
-      console.error("No token found, cannot connect socket");
-      return;
-    }
+    if (!token) return;
 
     socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
-      auth: {
-        token: token
-      }
-    });
-
-    socketRef.current.on("connect_error", (err) => {
+      auth: { token: token }
     });
 
     socketRef.current.on("join_success", () => {
@@ -159,10 +57,14 @@ export default function ChatsListPage() {
     });
 
     socketRef.current.on("receive-message", (newMessage) => {
-      socketRef.current.emit("message-delivered", {
-        message_id: newMessage._id,
-        sender_id: newMessage.sender_id
-      });
+
+
+      if (newMessage.receiver_id === currentUser.id) {
+        socketRef.current.emit("message-delivered", {
+          message_id: newMessage._id,
+          sender_id: newMessage.sender_id
+        });
+      }
 
       setTypingUsers(prev => {
         const newSet = new Set(prev);
@@ -173,9 +75,8 @@ export default function ChatsListPage() {
       setChatlist(prevChats => {
         const existingChatIndex = prevChats.findIndex(c => c.id === newMessage.chat_id);
 
-        let updatedChat;
         if (existingChatIndex !== -1) {
-          updatedChat = {
+          const updatedChat = {
             ...prevChats[existingChatIndex],
             lastMessage: newMessage.content,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -194,10 +95,7 @@ export default function ChatsListPage() {
     socketRef.current.on("message-status-update", ({ chat_id, status }) => {
       setChatlist(prev => prev.map(chat => {
         if (chat.id === chat_id) {
-          return {
-            ...chat,
-            status: status
-          };
+          return { ...chat, status: status };
         }
         return chat;
       }));
@@ -215,10 +113,8 @@ export default function ChatsListPage() {
       });
     });
 
-
     socketRef.current.on("user-online", ({ userId }) => {
       setChatlist(prev => prev.map(chat =>
-
         chat.user?.id === userId ? { ...chat, isOnline: true } : chat
       ));
     });
@@ -229,7 +125,6 @@ export default function ChatsListPage() {
       ));
     });
 
-
     return () => {
       socketRef.current?.disconnect();
     };
@@ -237,10 +132,7 @@ export default function ChatsListPage() {
 
   const fetchChats = async () => {
     try {
-      if (isDemo) {
-        setChatlist(mockChats);
-        return;
-      }
+      if (isDemo) return;
 
       const response = await getChatsList();
       const chats = response?.data?.data;
@@ -251,37 +143,35 @@ export default function ChatsListPage() {
           const dateB = new Date(b.updatedAt || b.createdAt);
           return dateB - dateA;
         });
+
         const formattedChats = sortedChats.map(chat => {
           let displayMessage = chat.last_message;
-          if (chat.message_type === "audio") displayMessage = "🎤 Voice Message";
-          if (chat.message_type === "image") displayMessage = "📷 Photo";
+          if (chat.message_type === "audio") displayMessage = "Voice Message";
+          if (chat.message_type === "image") displayMessage = "Photo";
 
-          // 👇 NEW: Determine Name and Image based on Group vs DM
-          // The backend now sends "name" and "image" for BOTH groups and DMs (mostly)
-          // But for DMs we might still rely on the "user" object if "name" is missing
+          const isGroup = chat.isGroup;
 
-          const displayName = chat.isGroup
+          const displayName = isGroup
             ? chat.name
-            : (chat.user?.full_name || chat.name || "Unknown User");
+            : (chat.user?.full_name || "Unknown User");
 
-          const displayImage = chat.isGroup
+          const displayAvatar = isGroup
             ? (chat.image || `https://api.dicebear.com/7.x/initials/svg?seed=${displayName}`)
-            : (chat.user?.profile_image || chat.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`);
+            : (chat.user?.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`);
+
           return {
             id: chat.chat_id,
             user: chat.user,
+            isGroup: isGroup,
             name: displayName,
-            avatar: displayImage,
-            // name: chat.user?.full_name || "Unknown User",
-            // avatar: chat.user?.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chat.user?.full_name}`,
+            avatar: displayAvatar,
             type: chat.message_type,
             lastMessage: displayMessage,
             timestamp: new Date(chat.updatedAt || chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             unreadCount: chat.unreadCount || 0,
-            isOnline: !chat.isGroup && isOnline,
+            isOnline: !isGroup && isOnline,
             status: chat.status,
-            isSender: chat.sender_id === currentUser.id,
-            isGroup: chat.isGroup
+            isSender: chat.sender_id === currentUser.id
           };
         });
         setChatlist(formattedChats);
@@ -299,9 +189,7 @@ export default function ChatsListPage() {
     const fetchProfile = async () => {
       try {
         const response = await getUserProfileAPI()
-        if (response.success) {
-          setProfileImage(response.data)
-        }
+        if (response.success) setProfileImage(response.data)
       } catch (error) {
         console.error("Failed to load profile", error)
       }
@@ -309,16 +197,20 @@ export default function ChatsListPage() {
     fetchProfile()
   }, [])
 
-  const handleChatClick = (chatId, user) => {
-    setChatlist(prev => prev.map(chat =>
-      chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+
+  const handleChatClick = (chat) => {
+    setChatlist(prev => prev.map(c =>
+      c.id === chat.id ? { ...c, unreadCount: 0 } : c
     ));
-    setActiveChat(chatId)
-    navigate(`/chats/${chatId}`, {
+    setActiveChat(chat.id)
+    navigate(`/chats/${chat.id}`, {
       state: {
         isDemo,
-        chat_id: chatId,
-        user: user
+        chat_id: chat.id,
+        user: chat.user,
+        isGroup: chat.isGroup,
+        name: chat.name,
+        avatar: chat.avatar
       }
     })
   }
@@ -330,9 +222,7 @@ export default function ChatsListPage() {
     if (query.length > 2) {
       setIsSearching(true);
       const response = await searchUsersAPI(query);
-      if (response.success) {
-        setSearchResults(response.data);
-      }
+      if (response.success) setSearchResults(response.data);
       setIsSearching(false);
     } else {
       setSearchResults([]);
@@ -353,7 +243,6 @@ export default function ChatsListPage() {
     });
     setIsSearchOpen(false);
   };
-
 
   const filteredChats = chatlist?.filter((chat) =>
     (chat.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -377,14 +266,9 @@ export default function ChatsListPage() {
             >
               <Settings className="h-5 w-5" />
             </Button>
-            <Avatar
-              className="h-9 w-9 cursor-pointer"
-              onClick={() => navigate("/profile")}
-            >
+            <Avatar className="h-9 w-9 cursor-pointer" onClick={() => navigate("/profile")}>
               <AvatarImage src={profileImage.profile_image} />
-              <AvatarFallback>
-                <User className="h-4 w-4" />
-              </AvatarFallback>
+              <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
             </Avatar>
           </div>
         </div>
@@ -408,9 +292,7 @@ export default function ChatsListPage() {
             transition={{ duration: 0.3 }}
           >
             {filteredChats.map((chat, index) => {
-
               const isTyping = typingUsers.has(chat.user?.id);
-
               return (
                 <motion.div
                   key={chat.id}
@@ -420,18 +302,13 @@ export default function ChatsListPage() {
                 >
                   <ChatListItem
                     {...chat}
-
                     lastMessage={
                       isTyping ? (
-                        <span className="text-primary italic font-medium animate-pulse">
-                          Typing...
-                        </span>
-                      ) : (
-                        chat.lastMessage
-                      )
+                        <span className="text-primary italic font-medium animate-pulse">Typing...</span>
+                      ) : (chat.lastMessage)
                     }
                     isActive={activeChat === chat.id}
-                    onClick={() => handleChatClick(chat.id, chat.user)}
+                    onClick={() => handleChatClick(chat)}
                   />
                 </motion.div>
               );
@@ -486,6 +363,26 @@ export default function ChatsListPage() {
                 </Button>
               </div>
 
+              {!isSearching && userSearchQuery.length === 0 && (
+                <div className="p-2 border-b border-border">
+                  <div
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setIsGroupModalOpen(true);
+                    }}
+                    className="flex items-center gap-3 p-3 hover:bg-accent rounded-lg cursor-pointer text-primary transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Create New Group</p>
+                      <p className="text-xs text-muted-foreground">Add multiple participants</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="max-h-[300px] overflow-y-auto p-2">
                 {isSearching ? (
                   <div className="flex justify-center p-4"><Loader2 className="animate-spin text-muted-foreground" /></div>
@@ -516,6 +413,15 @@ export default function ChatsListPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <CreateGroupModal
+        isOpen={isGroupModalOpen}
+        onClose={() => setIsGroupModalOpen(false)}
+        onGroupCreated={() => {
+          fetchChats();
+          setIsGroupModalOpen(false);
+        }}
+      />
     </div>
   )
 }

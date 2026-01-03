@@ -172,6 +172,7 @@ import { Button } from "@/components/ui/button"
 export function MessageBubble({
   id,
   content,
+  chat_alerts,
   timestamp,
   isSent,
   type = "text",
@@ -193,6 +194,13 @@ export function MessageBubble({
       transition: { duration: 0.3, ease: "easeOut" },
     },
   }
+
+  const showAlerts = chat_alerts && chat_alerts.length > 0;
+  const alertsContent = showAlerts ? (
+    <div className="mb-1 p-2 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 text-sm rounded">
+      {chat_alerts}
+    </div>
+  ) : null;
 
   const renderMessageContent = () => {
     switch (type) {
@@ -247,11 +255,12 @@ export function MessageBubble({
         <Avatar className="h-8 w-8">
           <AvatarImage src={avatar} />
           <AvatarFallback className="text-xs">
-            {userName?.charAt(0).toUpperCase() || "U"}
+            {userName || "U"}
           </AvatarFallback>
         </Avatar>
       )}
 
+      
       <div
         className={cn(
           "max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm",
@@ -260,6 +269,9 @@ export function MessageBubble({
             : "bg-primary-foreground text-card-foreground rounded-bl-md border border-border/50"
         )}
       >
+        {!isSent  && (
+          <span className="text-xs font-medium text-gray-500 mb-1">{userName}</span>
+        )}
         {reply_to && (
           <div onClick={() => onReplyClick?.(reply_to.id)}
             className={cn(

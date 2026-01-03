@@ -296,21 +296,36 @@ export const initSocket = (server) => {
   });
 
   io.on("connection", async (socket) => {
+
     socket.join(socket.userId.toString());
+
 
     const userGroups = await chatRoom.find({ participants: { $in: [Number(socket.userId)] } });
     userGroups.forEach(group => {
       socket.join(group._id.toString());
-      console.log(`User ${socket.userId} joined Group ${group.name} (${group._id})`);
     });
 
     await markUserOnline(socket.userId);
     socket.emit("join_success", { userId: socket.userId, status: "online" });
     socket.broadcast.emit("user-online", { userId: socket.userId });
 
+    socket.on("join-room", (roomId) => {
+      socket.join(roomId);
+      console.log(`User ${socket.userId} joined room ${roomId}`);
+    });
+
+    socket.on("join-group-room", (roomId) => {
+      socket.join(roomId);
+    });
+
     socket.on("send-message", (data) => {
       if (data.sender_id !== socket.userId) return;
-      io.to(data.receiver_id).emit("receive-message", data);
+
+      if (data.isGroup && data.group_id) {
+        io.to(data.group_id).emit("receive-message", data);
+      } else {
+        io.to(data.receiver_id).emit("receive-message", data);
+      }
     });
 
     socket.on("message-delivered", async ({ message_id, sender_id }) => {
@@ -332,16 +347,21 @@ export const initSocket = (server) => {
       }
     });
 
-    socket.on("message-read", async ({ chat_id, sender_id }) => {
+    socket.on("message-read", async ({ chat_id }) => {
       await Message.updateMany(
-        { chat_id, sender_id, read_at: null },
+        {
+          chat_id,
+          sender_id: { $ne: socket.userId },
+          read_at: null
+        },
         {
           read_at: new Date(),
           status: "read"
         }
       );
 
-      io.to(sender_id.toString()).emit("message-status-update", {
+
+      io.to(chat_id).emit("message-status-update", {
         chat_id,
         status: "read"
       });

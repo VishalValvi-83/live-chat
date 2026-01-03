@@ -9,7 +9,7 @@ export const getChatsList = async () => {
     }
 }
 
-export const getChatConversion = async(chatId, page = 1) => {
+export const getChatConversion = async (chatId, page = 1) => {
     try {
         const response = await AxiosInstance.get(`/chat/${chatId}?page=${page}&limit=20`)
         return response.data;
@@ -28,3 +28,14 @@ export const sendMessageAPI = async (data) => {
         return { success: false, error };
     }
 }
+
+export const createGroupAPI = async (data) => {
+    try {
+        const response = await AxiosInstance.post("/chat/group/create", data);
+        return response.data;
+    } catch (error) {
+        console.error("Error creating group", error);
+        return { success: false, message: error.response?.data?.message || "Failed to create group" };
+    }
+}
+

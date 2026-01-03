@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { io } from "socket.io-client"
 import { ChatHeader } from "@/components/chat/ChatHeader"
@@ -17,21 +16,27 @@ const getCurrentUser = () => {
 };
 
 export default function ChatConversationPage() {
-  const prevLastMessageId = useRef(null);
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+
+  const prevLastMessageId = useRef(null);
   const prevMessagesLength = useRef(0);
   const scrollRef = useRef(null)
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-
 
   const currentUser = getCurrentUser();
-  const otherUserId = location.state?.user?.id;
-  const chat_id = location.state?.chat_id || id;
-  const chatPartner = location.state?.user || null;
+  const state = location.state || {};
+
+  const isGroup = state.isGroup || false;
+  const chat_id = state.chat_id || id;
+
+  const otherUserId = state.user?.id;
+  const chatPartner = state.user || null;
+
+  const groupName = state.name || "Group Chat";
+  const groupImage = state.avatar || state.image;
 
   const [messages, setMessages] = useState([])
   const [isTyping, setIsTyping] = useState(false)
@@ -40,18 +45,19 @@ export default function ChatConversationPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
-
   const [partnerStatus, setPartnerStatus] = useState("offline");
   const [lastSeen, setLastSeen] = useState(null);
-
   const [previewImage, setPreviewImage] = useState(null);
+  const [chatAlerts, setChatAlerts] = useState('');
+
   useEffect(() => {
     prevMessagesLength.current = 0;
+    setMessages([]);
   }, [chat_id]);
 
 
   useEffect(() => {
-    if (otherUserId) {
+    if (otherUserId && !isGroup) {
       getUserProfileAPI(otherUserId).then(res => {
         if (res.success && res.data) {
           setPartnerStatus(res.data.is_online ? "online" : "offline");
@@ -59,112 +65,106 @@ export default function ChatConversationPage() {
         }
       });
     }
-  }, [otherUserId]);
+  }, [otherUserId, isGroup]);
+
 
   useEffect(() => {
     const token = sessionStorage.getItem("authToken");
-
     socketRef.current = io(import.meta.env.VITE_SOCKET_URL, {
       auth: { token }
     });
 
+    if (isGroup) {
+      socketRef.current.emit("join-group-room", chat_id);
+      socketRef.current.emit("join-room", chat_id);
+    }
+
     socketRef.current.on("receive-message", (newMessage) => {
       if (newMessage.chat_id === chat_id) {
+        if (newMessage.sender_id === currentUser.id) return;
         setMessages((prev) => {
-          if (prev.some(msg => msg.id === newMessage._id)) {
-            return prev;
-          }
+          if (prev.some(msg => msg.id === newMessage._id)) return prev;
           return [...prev, transformSingleMessage(newMessage, currentUser.id)];
         });
+
         setIsTyping(false);
 
-        socketRef.current.emit("message-delivered", {
-          message_id: newMessage._id,
-          sender_id: newMessage.sender_id
-        });
+        socketRef.current.emit("message-read", { chat_id });
 
-        socketRef.current.emit("message-read", {
-          chat_id,
-          sender_id: newMessage.sender_id
-        });
+        if (!isGroup) {
+          socketRef.current.emit("message-delivered", {
+            message_id: newMessage._id,
+            sender_id: newMessage.sender_id
+          });
+        }
       }
     });
 
-    socketRef.current.on("message-sent-confirmed", ({ id, status }) => {
-      setMessages(prev => prev.map(msg =>
-        msg.id === id ? { ...msg, status: status } : msg
-      ));
-    });
+    socketRef.current.on("message-status-update", ({ message_id, chat_id: updateChatId, status }) => {
 
-    socketRef.current.on("message-status-update", ({ message_id, chat_id, status }) => {
+      if (updateChatId && updateChatId !== chat_id) return;
+
       setMessages(prev => prev.map(msg => {
-
-        // Helper: Logic to prevent downgrading status
         const shouldUpdate = (currentStatus, newStatus) => {
-          if (currentStatus === "read") return false; // If Read, stay Read.
+          if (currentStatus === "read") return false;
           if (currentStatus === "delivered" && newStatus === "sent") return false;
           return true;
         };
 
-        // Case 1: Specific Message Update (e.g. Delivered)
         if (message_id && msg.id === message_id) {
-          // Only update if it's an "upgrade" (e.g., sent -> delivered)
           if (!shouldUpdate(msg.status, status)) return msg;
           return { ...msg, status };
         }
 
-        // Case 2: Bulk Read Update (e.g. User opened chat)
-        if (chat_id && msg.isSent && status === "read") {
+        if (msg.isSent && status === "read") {
           return { ...msg, status: "read" };
         }
-
         return msg;
       }));
     });
 
-    socketRef.current.on("user-online", ({ userId }) => {
-      if (userId === otherUserId) {
-        setPartnerStatus("online");
-      }
-    });
 
-    socketRef.current.on("user-offline", ({ userId }) => {
-      if (userId === otherUserId) {
-        setPartnerStatus("offline");
-        setLastSeen(new Date().toISOString());
-      }
-    });
+    if (!isGroup) {
+      socketRef.current.on("user-online", ({ userId }) => {
+        if (userId === otherUserId) setPartnerStatus("online");
+      });
 
-    socketRef.current.on("typing", ({ sender_id }) => {
-      if (sender_id === otherUserId) setIsTyping(true);
-    });
-    socketRef.current.on("stop-typing", ({ sender_id }) => {
-      if (sender_id === otherUserId) setIsTyping(false);
-    });
+      socketRef.current.on("user-offline", ({ userId }) => {
+        if (userId === otherUserId) {
+          setPartnerStatus("offline");
+          setLastSeen(new Date().toISOString());
+        }
+      });
+
+      socketRef.current.on("typing", ({ sender_id }) => {
+        if (sender_id === otherUserId) setIsTyping(true);
+      });
+      socketRef.current.on("stop-typing", ({ sender_id }) => {
+        if (sender_id === otherUserId) setIsTyping(false);
+      });
+    }
 
     return () => {
       socketRef.current.disconnect();
     };
-  }, [chat_id, currentUser?.id, otherUserId]);
+  }, [chat_id, currentUser?.id, otherUserId, isGroup]);
+
 
   useEffect(() => {
     const loadInitialMessages = async () => {
       if (!chat_id) return;
-
       setLoading(true);
       try {
         setPage(1);
-
         const response = await getChatConversion(chat_id, 1);
-
         if (response.success && response.data) {
           const formatted = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
           setMessages(formatted);
+          setChatAlerts(response.data.map(msg => msg.chat_alerts));
           setHasMore(response.hasMore);
 
-
-          if (socketRef.current && otherUserId) {
-            socketRef.current.emit("message-read", { chat_id, sender_id: otherUserId });
+          if (socketRef.current) {
+            socketRef.current.emit("message-read", { chat_id });
           }
         }
       } catch (error) {
@@ -178,33 +178,23 @@ export default function ChatConversationPage() {
 
   const loadMoreMessages = async () => {
     if (!hasMore || isFetchingMore) return;
-
     setIsFetchingMore(true);
     const nextPage = page + 1;
-
     const scrollContainer = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
     const oldHeight = scrollContainer?.scrollHeight;
     const oldTop = scrollContainer?.scrollTop;
 
     try {
       const response = await getChatConversion(chat_id, nextPage);
-
       if (response.success && response.data.length > 0) {
         const newMessages = response.data.map(msg => transformSingleMessage(msg, currentUser.id));
-
         setMessages(prev => {
-
           const existingIds = new Set(prev.map(m => m.id));
-
-
-          const uniqueNewMessages = newMessages.filter(msg => !existingIds.has(msg.id));
-
-          return [...uniqueNewMessages, ...prev];
+          const uniqueNew = newMessages.filter(msg => !existingIds.has(msg.id));
+          return [...uniqueNew, ...prev];
         });
-
         setPage(nextPage);
         setHasMore(response.hasMore);
-
 
         setTimeout(() => {
           if (scrollContainer) {
@@ -222,96 +212,43 @@ export default function ChatConversationPage() {
     }
   };
 
-
   const handleScroll = (e) => {
     const { scrollTop } = e.currentTarget;
-
     if (scrollTop === 0 && hasMore && !loading && !isFetchingMore) {
       loadMoreMessages();
     }
   };
 
-
   const transformSingleMessage = (msg, myId) => {
     return {
       id: msg._id,
       content: msg.content,
+      chat_alerts: msg.chat_alerts,
       timestamp: new Date(msg.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
       isSent: msg.sender_id === myId,
       type: msg.message_type === "text" ? undefined : msg.message_type,
-
       status: msg.status === "scheduled"
         ? "scheduled"
         : (msg.read_at ? "read" : (msg.delivered_at ? "delivered" : "sent")),
-
-      reply_to: msg.reply_to ? {
-        id: msg.reply_to.id,
-        content: msg.reply_to.content,
-        type: msg.reply_to.type
-      } : null,
-      translation: msg.translation || null
+      reply_to: msg.reply_to || null,
+      translation: msg.translation || null,
+      senderId: msg.sender_id,
+      senderName: msg.sender?.full_name || "Unknown",
+      senderAvatar: msg.sender?.profile_image
     };
   };
 
-  // const handleSendMessage = async (content, type = "text") => {
-  //   if (!content) return;
-
-
-  //   socketRef.current.emit("stop-typing", {
-  //     sender_id: currentUser.id,
-  //     receiver_id: otherUserId
-  //   });
-
-  //   const tempId = Date.now().toString();
-  //   const tempMessage = {
-  //     id: tempId,
-  //     content,
-  //     timestamp: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-  //     isSent: true,
-  //     status: "sent",
-  //     type: type,
-  //     reply_to: payload.reply_to // Show reply immediately in UI
-  //   };
-  //   setMessages((prev) => [...prev, tempMessage]);
-  //   setReplyingTo(null);
-  //   const payload = {
-  //     receiver_id: otherUserId,
-  //     content: content,
-  //     message_type: type,
-  //     reply_to: replyingTo ? {
-  //       id: replyingTo.id,
-  //       content: replyingTo.content,
-  //       type: replyingTo.type
-  //     } : null
-  //   };
-
-  //   const response = await sendMessageAPI(payload);
-  //   if (response && response.success) {
-  //     setMessages((prev) => prev.map(msg =>
-  //       msg.id === tempId ? transformSingleMessage(response.data, currentUser.id) : msg
-  //     ));
-
-  //   }
-
-  // };
 
   const handleSendMessage = async (content, type = "text", scheduledFor = null) => {
     if (!content && type === "text") return;
 
+    if (!isGroup && socketRef.current) {
+      socketRef.current.emit("stop-typing", {
+        sender_id: currentUser.id,
+        receiver_id: otherUserId
+      });
+    }
 
-    const payload = {
-      receiver_id: otherUserId,
-      content: content,
-      message_type: type,
-      scheduled_for: scheduledFor || null,
-      reply_to: replyingTo ? {
-        id: replyingTo.id,
-        content: replyingTo.content,
-        type: replyingTo.type,
-        sender_id: replyingTo.sender_id
-      } : null
-
-    };
 
     const tempId = Date.now().toString();
     const tempMessage = {
@@ -321,14 +258,35 @@ export default function ChatConversationPage() {
       isSent: true,
       status: scheduledFor ? "scheduled" : "sent",
       type: type,
-      reply_to: payload.reply_to
+      reply_to: replyingTo ? {
+        id: replyingTo.id,
+        content: replyingTo.content,
+        type: replyingTo.type,
+        sender_id: replyingTo.sender_id
+      } : null
     };
 
     setMessages((prev) => [...prev, tempMessage]);
-
-
     setReplyingTo(null);
 
+
+    const payload = {
+      content: content,
+      message_type: type,
+      scheduled_for: scheduledFor || null,
+      reply_to: replyingTo ? {
+        id: replyingTo.id,
+        content: replyingTo.content,
+        type: replyingTo.type,
+        sender_id: replyingTo.sender_id
+      } : null,
+
+
+      ...(isGroup
+        ? { isGroup: true, group_id: chat_id }
+        : { receiver_id: otherUserId }
+      )
+    };
 
     const response = await sendMessageAPI(payload);
     if (response && response.success) {
@@ -338,57 +296,18 @@ export default function ChatConversationPage() {
     }
   };
 
+
   const handleTyping = () => {
-    if (socketRef.current && otherUserId && currentUser?.id) {
-      socketRef.current.emit("typing", {
-        receiver_id: otherUserId,
-        sender_id: currentUser.id
-      });
+    if (!isGroup && socketRef.current && otherUserId) {
+      socketRef.current.emit("typing", { receiver_id: otherUserId, sender_id: currentUser.id });
     }
   };
 
   const handleStopTyping = () => {
-    if (socketRef.current && otherUserId && currentUser?.id) {
-      socketRef.current.emit("stop-typing", {
-        receiver_id: otherUserId,
-        sender_id: currentUser.id
-      });
+    if (!isGroup && socketRef.current && otherUserId) {
+      socketRef.current.emit("stop-typing", { receiver_id: otherUserId, sender_id: currentUser.id });
     }
   };
-
-
-  // useEffect(() => {
-
-  //   const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-
-  //   if (!viewport || isFetchingMore) return;
-
-  //   const currentLength = messages.length;
-  //   const prevLength = prevMessagesLength.current;
-
-  //   if (prevLength === 0 && currentLength > 0) {
-  //     setTimeout(() => {
-  //       viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'auto' });
-  //     }, 100);
-  //   }
-
-  //   else if (currentLength > prevLength) {
-  //     const lastMessage = messages[messages.length - 1];
-  //     const isMyMessage = lastMessage?.isSent;
-
-  //     const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-  //     const isNearBottom = distanceFromBottom < 200;
-
-  //     if (isMyMessage || isNearBottom) {
-  //       setTimeout(() => {
-  //         viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-  //       }, 100);
-  //     }
-  //   }
-
-  //   prevMessagesLength.current = currentLength;
-
-  // }, [messages, isFetchingMore]);
 
 
   useEffect(() => {
@@ -404,11 +323,8 @@ export default function ChatConversationPage() {
         viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'auto' });
       }, 100);
     }
-
     else if (currentLength > prevLength) {
-
       const isNewMessageAtBottom = lastMessage?.id !== prevLastMessageId.current;
-
       if (isNewMessageAtBottom) {
         const isMyMessage = lastMessage?.isSent;
         const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
@@ -421,43 +337,35 @@ export default function ChatConversationPage() {
         }
       }
     }
-
     prevMessagesLength.current = currentLength;
     prevLastMessageId.current = lastMessage?.id;
-
   }, [messages, isFetchingMore]);
 
-  if (!chatPartner && !otherUserId) return <div>Invalid Chat</div>;
+  if ((!chatPartner && !otherUserId) && !isGroup) return <div>Invalid Chat</div>;
 
   const handleScrollToMessage = (messageId) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
-
       element.classList.add("bg-accent/50");
-      setTimeout(() => {
-        element.classList.remove("bg-accent/50");
-      }, 1000);
+      setTimeout(() => element.classList.remove("bg-accent/50"), 1000);
     }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background relative">
       <ChatHeader
-        avatar={chatPartner?.profile_image}
-        name={chatPartner?.full_name || "Chat"}
-        // status={chatPartner?.status || (isTyping ? "typing..." : "online")}
+        avatar={isGroup ? groupImage : chatPartner?.profile_image}
+        name={isGroup ? groupName : (chatPartner?.full_name || "Chat")}
+        status={isGroup ? "Group Chat" : partnerStatus}
+        lastSeen={!isGroup ? lastSeen : null}
         isTyping={isTyping}
-        status={partnerStatus}
-        lastSeen={lastSeen}
+        isGroup={isGroup}
         onBack={() => navigate("/chats")}
-        profileId={otherUserId}
+        profileId={!isGroup ? otherUserId : null}
       />
 
-      <ScrollArea
-        className="flex-1 px-4 py-6"
-        onScrollCapture={handleScroll}
-        ref={scrollRef}>
+      <ScrollArea className="flex-1 px-4 py-6" onScrollCapture={handleScroll} ref={scrollRef}>
         <div className="max-w-4xl mx-auto">
           {isFetchingMore && (
             <div className="flex justify-center py-2 mb-2">
@@ -468,23 +376,37 @@ export default function ChatConversationPage() {
             <p className="text-center text-muted-foreground mt-4">Loading messages...</p>
           ) : (
             <>
+              {chatAlerts && (
+                <div className="mb-4 flex justify-center">
+                  <div className="bg-yellow-100 dark:bg-primary-foreground dark:text-primary/80 text-yellow-800 text-sm px-4 py-2 rounded-lg">
+                    {chatAlerts}
+                  </div>
+                </div>
+              )}
               {messages.map((message) => (
                 <MessageBubble
                   key={message.id}
                   {...message}
-                  avatar={!message.isSent ? chatPartner?.profile_image : undefined}
+
+                  avatar={
+                    !message.isSent
+                      ? (isGroup ? message.senderAvatar : chatPartner?.profile_image)
+                      : undefined
+                  }
+                  userName={
+                    isGroup ? message.senderName : (chatPartner?.full_name || "Chat")
+                  }
                   onImageClick={(src) => setPreviewImage(src)}
                   onReply={() => setReplyingTo({
                     id: message.id,
                     content: message.content,
                     type: message.type || "text",
-                    sender_id: message.isSent ? currentUser.id : otherUserId,
-                    senderName: message.isSent ? "You" : chatPartner?.full_name
+                    sender_id: message.senderId,
+                    senderName: message.isSent ? "You" : (isGroup ? message.senderName : chatPartner?.full_name)
                   })}
                   onReplyClick={handleScrollToMessage}
                 />
               ))}
-
 
               {isTyping && (
                 <div className="mb-4">
@@ -494,7 +416,6 @@ export default function ChatConversationPage() {
                   />
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </>
           )}
@@ -508,6 +429,7 @@ export default function ChatConversationPage() {
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
       />
+
       <ImagePreviewModal
         src={previewImage}
         isOpen={!!previewImage}

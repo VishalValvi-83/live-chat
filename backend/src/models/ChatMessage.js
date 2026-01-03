@@ -3,18 +3,18 @@ import mongoose from "mongoose";
 const messageSchema = new mongoose.Schema(
     {
         chat_id: {
-            type: String,    // can be "user1-user2" or group_id
+            type: String,
             required: true
         },
 
         sender_id: {
-            type: Number,    // matches MySQL users.id
+            type: Number,
             required: true
         },
 
         receiver_id: {
-            type: Number,    // matches MySQL users.id
-            required: true
+            type: Number,
+            required: false
         },
 
         message_type: {
@@ -24,8 +24,13 @@ const messageSchema = new mongoose.Schema(
         },
 
         content: {
-            type: String,   // encrypted text or uploaded file URL
+            type: String,
             required: true
+        },
+
+        chat_alerts: {
+            type: String,
+            required: false
         },
 
         is_encrypted: {
