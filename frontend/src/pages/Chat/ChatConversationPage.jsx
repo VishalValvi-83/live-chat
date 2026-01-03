@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { getChatConversion, sendMessageAPI } from "../../api/chatApi/chatsApi"
 import { getUserProfileAPI } from "../../api/userApi"
 import { ImagePreviewModal } from "@/components/ui/ImagePreviewModal";
-
+import { GroupInfoModal } from "@/components/chat/GroupInfoModal";
 const getCurrentUser = () => {
   const userStr = sessionStorage.getItem("user");
   return userStr ? JSON.parse(userStr) : null;
@@ -49,7 +49,7 @@ export default function ChatConversationPage() {
   const [lastSeen, setLastSeen] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [chatAlerts, setChatAlerts] = useState('');
-
+  const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
   useEffect(() => {
     prevMessagesLength.current = 0;
     setMessages([]);
@@ -363,6 +363,7 @@ export default function ChatConversationPage() {
         isGroup={isGroup}
         onBack={() => navigate("/chats")}
         profileId={!isGroup ? otherUserId : null}
+        onGroupInfoClick={() => setIsGroupInfoOpen(true)} // 👈 Pass Handler
       />
 
       <ScrollArea className="flex-1 px-4 py-6" onScrollCapture={handleScroll} ref={scrollRef}>
@@ -376,13 +377,6 @@ export default function ChatConversationPage() {
             <p className="text-center text-muted-foreground mt-4">Loading messages...</p>
           ) : (
             <>
-              {chatAlerts && (
-                <div className="mb-4 flex justify-center">
-                  <div className="bg-yellow-100 dark:bg-primary-foreground dark:text-primary/80 text-yellow-800 text-sm px-4 py-2 rounded-lg">
-                    {chatAlerts}
-                  </div>
-                </div>
-              )}
               {messages.map((message) => (
                 <MessageBubble
                   key={message.id}
@@ -393,6 +387,7 @@ export default function ChatConversationPage() {
                       ? (isGroup ? message.senderAvatar : chatPartner?.profile_image)
                       : undefined
                   }
+                  chatAlerts={chatAlerts}
                   userName={
                     isGroup ? message.senderName : (chatPartner?.full_name || "Chat")
                   }
@@ -435,6 +430,15 @@ export default function ChatConversationPage() {
         isOpen={!!previewImage}
         onClose={() => setPreviewImage(null)}
       />
+
+      {isGroup && (
+        <GroupInfoModal
+          isOpen={isGroupInfoOpen}
+          onClose={() => setIsGroupInfoOpen(false)}
+          groupId={chat_id}
+          currentUserId={currentUser.id}
+        />
+      )}
     </div>
   )
 }

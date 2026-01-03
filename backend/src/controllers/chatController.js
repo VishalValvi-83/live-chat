@@ -552,6 +552,7 @@ export const getChatList = async (req, res) => {
                     isGroup: true,
                     name: group?.name || "Unknown Group",
                     sender_id: chat.sender_id,
+                    chat_alerts: chat.chat_alerts,
                     image: group?.group_image || "",
                     last_message: chat.last_message,
                     message_type: chat.message_type,
@@ -560,7 +561,7 @@ export const getChatList = async (req, res) => {
                     unreadCount: chat.unreadCount
                 };
             } else {
-                
+
                 let u1, u2;
                 if (chat._id.startsWith("chat_")) {
                     const parts = chat._id.split("_");
@@ -648,6 +649,153 @@ export const createGroup = async (req, res) => {
 
     } catch (error) {
         console.error("Create Group Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const getGroupDetails = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+
+        const group = await chatRoom.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found" });
+        }
+
+        const participantIds = group.participants;
+        let members = [];
+
+        if (participantIds.length > 0) {
+            const placeholders = participantIds.map(() => "?").join(",");
+            const [users] = await mysqlDB.execute(
+                `SELECT id, full_name, email, profile_image, username FROM users WHERE id IN (${placeholders})`,
+                participantIds
+            );
+            members = users;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                ...group.toObject(),
+                members: members
+            }
+        });
+
+    } catch (error) {
+        console.error("Get Group Details Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// export const addGroupMember = async (req, res) => {
+//     try {
+//         const { groupId, userId } = req.body;
+//         const currentUserId = req.user.id;
+
+//         const [rows] = await mysqlDB.query(
+//             "SELECT id, username, full_name FROM users WHERE id = ?",
+//             [userId]
+//         );
+
+//         if (rows.length === 0) {
+//             return res.status(404).json({ message: "User not found" });
+//         }
+//         const user = rows[0];
+
+//         const group = await chatRoom.findById(groupId);
+//         if (!group) return res.status(404).json({ message: "Group not found" });
+
+//         if (group.participants.includes(userId)) {
+//             return res.status(400).json({ message: "User is already in the group" });
+//         }
+
+//         group.participants.push(userId);
+//         await group.save();
+
+//         await Message.create({
+//             chat_id: groupId,
+//             sender_id: currentUserId,
+//             content: `${req.user.full_name} added ${user.full_name} to the group`,
+//             chat_alerts: `${req.user.full_name} added ${user.full_name} to the group`,
+//             is_encrypted: false
+//         });
+
+//         res.status(200).json({ success: true, message: "Member added successfully" });
+
+//     } catch (error) {
+//         console.error("Add Member Error:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// };
+
+export const addGroupMember = async (req, res) => {
+    try {
+        const { groupId, userId } = req.body;
+        const currentUserId = req.user.id;
+
+        const group = await chatRoom.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found" });
+
+        if (!group.participants.includes(currentUserId)) {
+            return res.status(403).json({ message: "Not authorized" });
+        }
+
+        // Get both users' info
+        const [userRows] = await mysqlDB.query(
+            "SELECT id, username, full_name FROM users WHERE id IN (?, ?)",
+            [userId, currentUserId]
+        );
+
+        const newUser = userRows.find(u => u.id === userId);
+        const currentUser = userRows.find(u => u.id === currentUserId);
+
+        if (!newUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (group.participants.includes(userId)) {
+            return res.status(400).json({ message: "User already in group" });
+        }
+
+        group.participants.push(userId);
+        await group.save();
+
+        await Message.create({
+            chat_id: groupId,
+            sender_id: currentUserId,
+            chat_alerts: `${currentUser.full_name} added ${newUser.full_name} to the group`,
+            is_encrypted: false
+        });
+
+        res.status(200).json({ success: true, message: "Member added successfully" });
+
+    } catch (error) {
+        console.error("Add Member Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+export const removeGroupMember = async (req, res) => {
+    try {
+        const { groupId, userId } = req.body;
+
+        const group = await chatRoom.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found" });
+
+        group.participants = group.participants.filter(id => Number(id) !== Number(userId));
+
+        if (group.admins) {
+            group.admins = group.admins.filter(id => Number(id) !== Number(userId));
+        }
+
+        await group.save();
+
+        res.status(200).json({ success: true, message: "Member removed successfully" });
+
+    } catch (error) {
+        console.error("Remove Member Error:", error);
         res.status(500).json({ message: "Server error" });
     }
 };

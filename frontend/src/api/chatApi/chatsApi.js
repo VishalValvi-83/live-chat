@@ -39,3 +39,30 @@ export const createGroupAPI = async (data) => {
     }
 }
 
+export const getGroupDetailsAPI = async (groupId) => {
+    try {
+        const response = await AxiosInstance.get(`/chat/group/${groupId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching group details", error);
+        return { success: false, message: "Failed to fetch details" };
+    }
+}
+
+export const addGroupMemberAPI = async (data) => {
+    try {
+        const response = await AxiosInstance.post("/chat/group/add-member", data);
+        return response.data;
+    } catch (error) {
+        return { success: false, message: error.response?.data?.message || "Failed to add member" };
+    }
+}
+
+export const removeGroupMemberAPI = async (data) => {
+    try {
+        const response = await AxiosInstance.post("/chat/group/remove-member", data);
+        return response.data;
+    } catch (error) {
+        return { success: false, message: error.response?.data?.message || "Failed to remove member" };
+    }
+}

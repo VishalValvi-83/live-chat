@@ -183,6 +183,7 @@ export function MessageBubble({
   onReply,
   onReplyClick,
   onImageClick,
+  chatAlerts,
   translation }) {
 
   const bubbleVariants = {
@@ -240,90 +241,95 @@ export function MessageBubble({
   }
 
   return (
-    <motion.div
-      id={`message-${id}`}
-      variants={bubbleVariants}
-      initial="hidden"
-      onDoubleClick={onReply}
-      animate="visible"
-      className={cn(
-        "flex gap-2 mb-3 group",
-        isSent ? "flex-row-reverse" : "flex-row"
-      )}
-    >
-      {!isSent && (
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={avatar} />
-          <AvatarFallback className="text-xs">
-            {userName || "U"}
-          </AvatarFallback>
-        </Avatar>
-      )}
-
-      
-      <div
+    <>
+      {alertsContent && <div className="mb-1 p-2 bg-yellow-100 text-center mx-auto max-w-fit text-yellow-800 text-sm rounded">
+        {chat_alerts}
+      </div>}
+      {content && content.length > 0 && <motion.div
+        id={`message-${id}`}
+        variants={bubbleVariants}
+        initial="hidden"
+        onDoubleClick={onReply}
+        animate="visible"
         className={cn(
-          "max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm",
-          isSent
-            ? "bg-gradient-to-br from-primary to- text-white rounded-br-md"
-            : "bg-primary-foreground text-card-foreground rounded-bl-md border border-border/50"
+          "flex gap-2 mb-3 group",
+          isSent ? "flex-row-reverse" : "flex-row"
         )}
       >
-        {!isSent  && (
-          <span className="text-xs font-medium text-gray-500 mb-1">{userName}</span>
-        )}
-        {reply_to && (
-          <div onClick={() => onReplyClick?.(reply_to.id)}
-            className={cn(
-              "mb-2 rounded px-3 py-1.5 text-xs border-l-4 bg-black/10 cursor-pointer opacity-90 hover:opacity-100 transition-opacity",
-              isSent ? "border-white/50" : "border-primary"
-            )}>
-            <p className="font-bold opacity-80 mb-0.5">Reply to message</p>
-            <p className="line-clamp-1 opacity-70">
-              {reply_to.type === 'image' ? '📷 Photo' : reply_to.content}
-            </p>
-          </div>
+        {!isSent && (
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={avatar} />
+            <AvatarFallback className="text-xs">
+              {userName || "U"}
+            </AvatarFallback>
+          </Avatar>
         )}
 
-        {renderMessageContent()}
 
-        {!isSent && translation && translation.lang != 'en' && (
-          <div className={`mt-2 pt-2 border-t ${isSent ? "border-white/20" : "border-black/10"}`}>
-            <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5 flex items-center gap-1">
-              Translated ({translation.lang})
-            </p>
-            <p className="text-sm italic opacity-95">
-              {translation.text}
-            </p>
-          </div>
-        )}
-
-        <div className={cn(
-          "flex items-center justify-end gap-1 mt-1.5",
-          isSent ? "text-white/70" : "text-muted-foreground"
-        )}>
-          <span className="text-xs text-secondary-foreground">{timestamp}</span>
-          {isSent && (
-            <span>
-              {status === "scheduled" && <Clock className="h-3.5 w-3.5 text-white/80" />}
-              {status === "sent" && <Check className="h-3.5 w-3.5" />}
-              {status === "delivered" && <CheckCheck className="h-3.5 w-3.5" />}
-              {status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-200" />}
-            </span>
+        <div
+          className={cn(
+            "max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-2.5 shadow-sm",
+            isSent
+              ? "bg-gradient-to-br from-primary to- text-white rounded-br-md"
+              : "bg-primary-foreground text-card-foreground rounded-bl-md border border-border/50"
           )}
+        >
+          {!isSent && (
+            <span className="text-xs font-medium text-gray-500 mb-1">{userName}</span>
+          )}
+          {reply_to && (
+            <div onClick={() => onReplyClick?.(reply_to.id)}
+              className={cn(
+                "mb-2 rounded px-3 py-1.5 text-xs border-l-4 bg-black/10 cursor-pointer opacity-90 hover:opacity-100 transition-opacity",
+                isSent ? "border-white/50" : "border-primary"
+              )}>
+              <p className="font-bold opacity-80 mb-0.5">Reply to message</p>
+              <p className="line-clamp-1 opacity-70">
+                {reply_to.type === 'image' ? '📷 Photo' : reply_to.content}
+              </p>
+            </div>
+          )}
+
+          {renderMessageContent()}
+
+          {!isSent && translation && translation.lang != 'en' && (
+            <div className={`mt-2 pt-2 border-t ${isSent ? "border-white/20" : "border-black/10"}`}>
+              <p className="text-[10px] uppercase tracking-wider opacity-70 mb-0.5 flex items-center gap-1">
+                Translated ({translation.lang})
+              </p>
+              <p className="text-sm italic opacity-95">
+                {translation.text}
+              </p>
+            </div>
+          )}
+
+          <div className={cn(
+            "flex items-center justify-end gap-1 mt-1.5",
+            isSent ? "text-white/70" : "text-muted-foreground"
+          )}>
+            <span className="text-xs text-secondary-foreground">{timestamp}</span>
+            {isSent && (
+              <span>
+                {status === "scheduled" && <Clock className="h-3.5 w-3.5 text-white/80" />}
+                {status === "sent" && <Check className="h-3.5 w-3.5" />}
+                {status === "delivered" && <CheckCheck className="h-3.5 w-3.5" />}
+                {status === "read" && <CheckCheck className="h-3.5 w-3.5 text-blue-600 dark:text-blue-200" />}
+              </span>
+            )}
+          </div>
+
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
+          onClick={onReply}
+          title="Reply"
+        >
+          <CornerUpLeft className="h-4 w-4 text-muted-foreground" />
+        </Button>
 
-      </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity rounded-full"
-        onClick={onReply}
-        title="Reply"
-      >
-        <CornerUpLeft className="h-4 w-4 text-muted-foreground" />
-      </Button>
-
-    </motion.div >
+      </motion.div >}
+    </>
   )
 }

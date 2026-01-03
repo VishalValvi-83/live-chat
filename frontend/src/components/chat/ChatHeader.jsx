@@ -24,51 +24,49 @@ const formatLastSeen = (dateString) => {
 export function ChatHeader({
   avatar,
   name,
-  status = "offline", 
+  status = "offline",
   lastSeen,
   isTyping = false,
   onBack,
   isGroup,
   profileId,
+  onGroupInfoClick
 }) {
   const navigate = useNavigate()
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="rounded-full"
-        onClick={onBack}
-      >
+      <Button variant="ghost" size="icon" className="rounded-full" onClick={onBack}>
         <ArrowLeft className="h-5 w-5" />
       </Button>
 
-      <Avatar className="h-10 w-10">
-        <AvatarImage src={avatar} />
-        <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-      </Avatar>
+      {/*  Make this section Clickable for Groups */}
+      <div
+        className={`flex items-center gap-3 flex-1 min-w-0 ${isGroup ? 'cursor-pointer hover:opacity-80' : ''}`}
+        onClick={() => isGroup && onGroupInfoClick && onGroupInfoClick()}
+      >
+        <Avatar className="h-10 w-10">
+          <AvatarImage src={avatar} />
+          <AvatarFallback>{name?.charAt(0).toUpperCase()}</AvatarFallback>
+        </Avatar>
 
-      <div className="flex-1 min-w-0">
-        <h2 className="font-semibold text-sm truncate">{name}</h2>
-        <p className="text-xs text-muted-foreground">
-          {isTyping ? (
-            <span className="text-blue-500 font-medium">typing...</span>
-          ) : (
-            status === "online"
-              ? <span className="text-green-500 font-medium">Online</span>
-              : (isGroup ? <span className="text-gray-500 font-medium">Group Chat</span> : formatLastSeen(lastSeen))
-          )}
-        </p>
+        <div className="flex-1 min-w-0">
+          <h2 className="font-semibold text-sm truncate">{name}</h2>
+          <p className="text-xs text-muted-foreground">
+            {isTyping ? (
+              <span className="text-blue-500 font-medium">typing...</span>
+            ) : (
+              status === "online"
+                ? <span className="text-green-500 font-medium">Online</span>
+                : (isGroup ? <span className="text-muted-foreground font-medium">Tap for group info</span> : formatLastSeen(lastSeen))
+            )}
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Phone className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Video className="h-5 w-5" />
-        </Button>
+        {/* ... (Keep existing buttons) ... */}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
@@ -76,12 +74,16 @@ export function ChatHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate("/profile", { state: { user_id: profileId, isChatUser: true } })} >View Profile</DropdownMenuItem>
+            {/* 👇 Add Group Info Option */}
+            {isGroup ? (
+              <DropdownMenuItem onClick={onGroupInfoClick}>Group Info</DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => navigate("/profile", { state: { user_id: profileId, isChatUser: true } })}>
+                View Profile
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem>Search Messages</DropdownMenuItem>
-            <DropdownMenuItem>Mute Notifications</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
-              Block User
-            </DropdownMenuItem>
+            {/* ... */}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

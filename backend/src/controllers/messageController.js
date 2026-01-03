@@ -130,25 +130,21 @@ export const sendMessage = async (req, res) => {
         });
 
         if (!isScheduled) {
-            // 2. 👇 NEW: Fetch Sender Details from MySQL for Real-time Display
             const [users] = await mysqlDB.query(
                 "SELECT id, full_name, profile_image FROM users WHERE id = ?",
                 [sender_id]
             );
             const senderInfo = users[0] || {};
 
-            // 3. Prepare Real-time Payload
             const socketPayload = {
                 ...message.toObject(),
-                sender: senderInfo // Attach sender info (Name/Avatar)
+                sender: senderInfo 
             };
 
             const io = getIO();
             if (isGroup) {
-                // Emit to Group Room
                 io.to(group_id).emit("receive-message", socketPayload);
             } else {
-                // Emit to Receiver
                 io.to(receiver_id.toString()).emit("receive-message", socketPayload);
             }
         }
