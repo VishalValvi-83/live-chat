@@ -26,7 +26,13 @@ export const CallProvider = ({ children }) => {
         const token = sessionStorage.getItem("authToken");
         if (token) {
             socketRef.current = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
-                auth: { token }
+                auth: { token },
+                transports: ['websocket'], // 👈 Add this line
+                withCredentials: true
+            });
+
+            socketRef.current.on('connect_error', (err) => {
+                console.error("Socket Connection Error:", err); // 👈 Debugging help
             });
 
             socketRef.current.on('call-user', ({ from, name: callerName, signal, isVideo }) => {
@@ -36,7 +42,7 @@ export const CallProvider = ({ children }) => {
         }
     }, []);
 
-    
+
     const getMedia = async (isVideoCall = true) => {
         try {
             const currentStream = await navigator.mediaDevices.getUserMedia({
@@ -60,38 +66,38 @@ export const CallProvider = ({ children }) => {
         }
     };
     //17.50
-    
-    
-    
-    
-    
 
-    
-    
 
-    
-    
-    
 
-    
-    
-    
-    
 
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     const answerCall = async () => {
-        
+
         const isVideoCall = call.isVideo;
 
-        
+
         const currentStream = await getMedia(isVideoCall);
         if (!currentStream) return;
 
         setCallAccepted(true);
-        
+
         setIsVideo(isVideoCall);
 
         const peer = new Peer({ initiator: false, trickle: false, stream: currentStream });
@@ -113,7 +119,7 @@ export const CallProvider = ({ children }) => {
         setIsVideo(isVideoCall);
         setIsCalling(true);
 
-        
+
         const currentStream = await getMedia(isVideoCall);
         if (!currentStream) {
             setIsCalling(false);
@@ -150,21 +156,21 @@ export const CallProvider = ({ children }) => {
         connectionRef.current = peer;
     };
 
-    
+
     const leaveCall = () => {
         setCallEnded(true);
         setIsCalling(false);
         setIsReceivingCall(false);
         setCallAccepted(false);
-        setCall({}); 
+        setCall({});
 
-        
+
         if (connectionRef.current) {
             connectionRef.current.destroy();
             connectionRef.current = null;
         }
 
-        
+
         if (stream) {
             stream.getTracks().forEach(track => {
                 track.stop();
@@ -173,12 +179,12 @@ export const CallProvider = ({ children }) => {
             setStream(null);
         }
 
-        
+
         if (socketRef.current && (call.from || call.to)) {
             socketRef.current.emit('end-call', { to: call.from || call.to });
         }
 
-        
+
     };
 
     return (
