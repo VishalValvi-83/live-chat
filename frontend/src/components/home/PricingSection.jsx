@@ -60,28 +60,30 @@ export default function PricingSection() {
                                     </div>
                                 </div>
                             )}
-                            <div className={`relative h-full bg-gradient-to-br ${cardBg} backdrop-blur-xl rounded-3xl p-8 border ${plan.popular ? 'border-blue-500/50 shadow-xl shadow-blue-500/10' : borderColor}`}>
-                                <div className="text-center mb-8">
-                                    <h3 className={`text-2xl font-bold mb-2 ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{plan.name}</h3>
-                                    <div className="flex items-baseline justify-center gap-1">
-                                        <span className={`text-5xl font-bold ${textColor}`}>{plan.price}</span>
-                                        {plan.price !== "Custom" && (
-                                            <span className={textMuted2}>/month</span>
-                                        )}
+                            <div className={`relative h-full flex flex-col justify-between bg-gradient-to-br ${cardBg} backdrop-blur-xl rounded-3xl p-8 border ${plan.popular ? 'border-blue-500/50 shadow-xl shadow-blue-500/10' : borderColor}`}>
+                                <div className="mb-8">
+                                    <div className="text-center mb-8">
+                                        <h3 className={`text-2xl font-bold mb-2 ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{plan.name}</h3>
+                                        <div className="flex items-baseline justify-center gap-1">
+                                            <span className={`text-5xl font-bold ${textColor}`}>{plan.price}</span>
+                                            {plan.price !== "Custom" && (
+                                                <span className={textMuted2}>/month</span>
+                                            )}
+                                        </div>
                                     </div>
+                                    <ul className="space-y-4">
+                                        {plan.features.map((feature) => (
+                                            <li key={feature} className="flex items-start gap-3">
+                                                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                    <Check className="h-3 w-3 text-white" />
+                                                </div>
+                                                <span className={textMuted}>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
-                                <ul className="space-y-4 mb-8">
-                                    {plan.features.map((feature) => (
-                                        <li key={feature} className="flex items-start gap-3">
-                                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                <Check className="h-3 w-3 text-white" />
-                                            </div>
-                                            <span className={textMuted}>{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
                                 <Button
-                                    className={`w-full ${plan.popular ? "bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white" : `${hoverBg} border ${borderColor}`}`}
+                                    className={`w-full h-11 ${plan.popular ? "bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white" : `${hoverBg} border ${borderColor}`}`}
                                     style={!plan.popular ? { color: fgColor } : {}}
                                     size="lg"
                                     onClick={() => navigate("/register")}
