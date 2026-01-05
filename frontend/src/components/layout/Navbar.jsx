@@ -32,8 +32,8 @@ const Navbar = () => {
                         <span className={`font-bold text-xl ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>VoxenApp</span>
                     </div>
                     <div className="hidden md:flex items-center gap-8">
-                        <a href="#features" className={`${textMuted} hover:${textColor} transition-colors text-sm`}>Features</a>
                         <a href="#communication" className={`${textMuted} hover:${textColor} transition-colors text-sm`}>Communication</a>
+                        <a href="#features" className={`${textMuted} hover:${textColor} transition-colors text-sm`}>Features</a>
                         <a href="#pricing" className={`${textMuted} hover:${textColor} transition-colors text-sm`}>Pricing</a>
                     </div>
                     <div className="flex items-center gap-4">
