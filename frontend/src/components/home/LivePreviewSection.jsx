@@ -54,6 +54,7 @@ export default function LivePreviewSection() {
                         initial={{ opacity: 0, x: -50 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
+                        transition={{ duration: 0.6 }}
                         className="relative"
                     >
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-violet-500/20 rounded-3xl blur-3xl" />
@@ -88,7 +89,7 @@ export default function LivePreviewSection() {
                                         initial={{ opacity: 0, y: 20 }}
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
-                                        transition={{ delay: index * 0.15 }}
+                                        transition={{ duration: 0.6, delay: index * 0.15 }}
                                         className="flex items-start gap-3"
                                     >
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${msg.avatar === "A" ? "bg-blue-500" : msg.avatar === "S" ? "bg-pink-500" : "bg-emerald-500"}`}>
@@ -110,7 +111,7 @@ export default function LivePreviewSection() {
                                     initial={{ opacity: 0 }}
                                     whileInView={{ opacity: 1 }}
                                     viewport={{ once: true }}
-                                    transition={{ delay: 0.8 }}
+                                    transition={{ duration: 0.6,delay: 0.8 }}
                                     className={`flex items-center gap-2 text-xs ${textMuted3}`}
                                 >
                                     <div className="flex gap-1">
@@ -150,42 +151,47 @@ export default function LivePreviewSection() {
                         initial={{ opacity: 0, x: 50 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
+                        transition={{
+                            duration: 0.6,
+                        }}
                         className="space-y-8"
                     >
-                        {livePreviewFeatures.map((feature, index) => (
-                            <motion.div
-                                key={feature.title}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: index * 0.1 }}
-                                className="flex items-start gap-4"
-                            >
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 flex items-center justify-center flex-shrink-0">
-                                    <feature.icon className="w-6 h-6" style={{ color: accentColor }} />
-                                </div>
-                                <div>
-                                    <h4 className={`text-lg font-bold mb-1 ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                                        {feature.title}
-                                    </h4>
-                                    <p className={`text-sm leading-relaxed ${textMuted2}`}>{feature.description}</p>
-                                </div>
-                            </motion.div>
-                        ))}
+                        {
+                            livePreviewFeatures.map((feature, index) => (
+                                <motion.div
+                                    key={feature.title}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className="flex items-start gap-4"
+                                >
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 flex items-center justify-center flex-shrink-0">
+                                        <feature.icon className="w-6 h-6" style={{ color: accentColor }} />
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-lg font-bold mb-1 ${textColor}`} style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                            {feature.title}
+                                        </h4>
+                                        <p className={`text-sm leading-relaxed ${textMuted2}`}>{feature.description}</p>
+                                    </div>
+                                </motion.div>
+                            ))
+                        }
 
-                        <Link to="/demo">
+                        < Link to="/demo" state={{ isDemo: true }}>
                             <motion.div
                                 className="inline-flex items-center gap-2 transition-colors group cursor-pointer"
                                 style={{ color: accentColor }}
                                 whileHover={{ x: 5 }}
                             >
-                                Try the interactive demo
+                                Try demo
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </motion.div>
                         </Link>
                     </motion.div>
                 </div>
-            </div>
-        </section>
+            </div >
+        </section >
     )
 }
