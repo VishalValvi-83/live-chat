@@ -8,9 +8,10 @@ import "./config/mysql.js";
 import "./config/mongo.js";
 import dotenv from "dotenv";
 import { apiLimiter, authLimiter } from "./middleware/rateLimiter.js";
+dotenv.config();
 
 const app = express();
-dotenv.config();
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
