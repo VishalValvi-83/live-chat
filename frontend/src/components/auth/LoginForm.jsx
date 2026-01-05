@@ -33,7 +33,7 @@ export function LoginForm({ onRegisterClick }) {
         setEmail("")
         setPassword("")
         navigate("/chats");
-      } else{
+      } else {
         toast.error(res.data.message || "Login failed. Please try again.")
       }
     } catch (error) {
@@ -189,7 +189,7 @@ export function LoginForm({ onRegisterClick }) {
         <motion.button
           type="button"
           onClick={onRegisterClick}
-          className="font-medium text-blue-500 hover:text-blue-600 transition-colors underline-offset-2 hover:underline"
+          className="font-medium text-primary hover:text-primary/70 transition-colors underline-offset-2 hover:underline"
           whileTap={{ scale: 0.96 }}
         >
           Create account
