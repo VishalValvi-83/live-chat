@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Search, UserPlus, Trash2, LogOut, Shield } from "lucide-react";
+import { X, Search, UserPlus, Trash2, LogOut, Shield, Camera, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
