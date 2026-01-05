@@ -8,6 +8,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useNavigate } from "react-router-dom"
+import { useCall } from "../../context/CallContext"
+import { toast } from "react-toastify"
 
 const formatLastSeen = (dateString) => {
   if (!dateString) return "Offline";
@@ -32,6 +34,14 @@ export function ChatHeader({
   profileId,
   onGroupInfoClick
 }) {
+  const { callUser } = useCall();
+
+  const handleCall = (video = false) => {
+    if (isGroup) return toast.success("Group calling is coming soon!");
+    if (!profileId) return;
+
+    callUser(profileId, video);
+  };
   const navigate = useNavigate()
 
   return (
@@ -65,7 +75,12 @@ export function ChatHeader({
       </div>
 
       <div className="flex items-center gap-1">
-        {/* ... (Keep existing buttons) ... */}
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => handleCall(false)}>
+          <Phone className="h-5 w-5" />
+        </Button>
+        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => handleCall(true)}>
+          <Video className="h-5 w-5" />
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -74,7 +89,6 @@ export function ChatHeader({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {/* 👇 Add Group Info Option */}
             {isGroup ? (
               <DropdownMenuItem onClick={onGroupInfoClick}>Group Info</DropdownMenuItem>
             ) : (

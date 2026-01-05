@@ -16,6 +16,8 @@ import AppearanceSettingsPage from './pages/Chat/ChatSettings/AppearanceSettings
 import PreLoader from './components/PreLoader'
 import './index.css'
 import { ToastContainer } from 'react-toastify';
+import { CallProvider } from './context/CallContext'
+import { CallOverlay } from './components/chat/CallOverlay'
 export const PreloaderContext = createContext({ preloaderComplete: false })
 export const usePreloader = () => useContext(PreloaderContext)
 
@@ -31,35 +33,41 @@ function App() {
   return (
     <ThemeProvider>
       <PreloaderContext.Provider value={{ preloaderComplete }}>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        {showPreLoader && <PreLoader onComplete={handlePreloaderComplete} />}
-        <Router>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/demo" element={<DemoPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/chats" element={<ChatsListPage />} />
-            <Route path="/chats/:id" element={<ChatConversationPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/settings/account" element={<AccountSettingsPage />} />
-            <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
-            <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
-            <Route path="/settings/appearance" element={<AppearanceSettingsPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Routes>
-        </Router>
+        <CallProvider>
+
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+
+          <CallOverlay />
+          {showPreLoader && <PreLoader onComplete={handlePreloaderComplete} />}
+          <Router>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/demo" element={<DemoPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/chats" element={<ChatsListPage />} />
+              <Route path="/chats/:id" element={<ChatConversationPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings/account" element={<AccountSettingsPage />} />
+              <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
+              <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
+              <Route path="/settings/appearance" element={<AppearanceSettingsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Routes>
+          </Router>
+        </CallProvider>
+
       </PreloaderContext.Provider>
     </ThemeProvider>
   )

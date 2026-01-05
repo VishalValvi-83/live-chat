@@ -377,6 +377,27 @@ export const initSocket = (server) => {
       socket.to(receiver_id.toString()).emit("stop-typing", { sender_id, receiver_id });
     });
 
+    socket.on("call-user", ({ userToCall, signalData, from, name, isVideo }) => {
+      io.to(userToCall.toString()).emit("call-user", {
+        signal: signalData,
+        from,
+        name,
+        isVideo
+      });
+    });
+
+    socket.on("answer-call", (data) => {
+      io.to(data.to.toString()).emit("call-accepted", data.signal);
+    });
+
+    socket.on("ice-candidate", ({ target, candidate }) => {
+      io.to(target.toString()).emit("ice-candidate", { candidate });
+    });
+
+    socket.on("end-call", ({ to }) => {
+      io.to(to.toString()).emit("call-ended");
+    });
+
     socket.on("disconnect", async () => {
       if (socket.userId) {
         await markUserOffline(socket.userId);
