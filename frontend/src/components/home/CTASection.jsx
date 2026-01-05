@@ -31,7 +31,7 @@ export default function CTASection() {
                             Ready to get started?
                         </h2>
                         <p className="text-xl mb-8 text-white/90 relative z-10">
-                            Join millions of users already chatting on VoxenApp
+                            Join thousands of users already chatting on VoxenApp
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
                             <Link to="/register">
@@ -41,7 +41,7 @@ export default function CTASection() {
                                     </Button>
                                 </motion.div>
                             </Link>
-                            <Link to="/chats">
+                            <Link to="/chats" state={{ isdemo: true }}>
                                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                     <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 px-8">
                                         Try Demo
