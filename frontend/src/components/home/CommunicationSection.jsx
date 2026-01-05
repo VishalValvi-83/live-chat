@@ -211,14 +211,14 @@ export default function CommunicationSection() {
                                     transition={{ type: "spring", stiffness: 300 }}
                                 >
                                     <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-20 rounded-3xl blur-3xl group-hover:opacity-30 transition-opacity`} />
-                                    <div className={`relative bg-gradient-to-br ${cardBg} backdrop-blur-xl rounded-3xl p-8 border ${borderColor} overflow-hidden`}>
+                                    <div className={`relative  bg-gradient-to-br ${cardBg} backdrop-blur-xl rounded-3xl p-8 border ${borderColor} overflow-hidden`}>
                                         <div className="absolute top-4 right-4 flex gap-2">
                                             <div className="w-3 h-3 rounded-full bg-red-400/50" />
                                             <div className="w-3 h-3 rounded-full bg-yellow-400/50" />
                                             <div className="w-3 h-3 rounded-full bg-green-400/50" />
                                         </div>
                                         <motion.div
-                                            className={`h-64 flex items-center justify-center bg-gradient-to-br ${feature.color} opacity-10 rounded-2xl`}
+                                            className={`h-64 w-72 sm:w-full flex items-center justify-center bg-gradient-to-br ${feature.color} opacity-10 rounded-2xl`}
                                             whileHover={{ scale: 1.05 }}
                                         >
                                             <motion.div
