@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea" 
+import { Textarea } from "@/components/ui/textarea"
 import { getUserProfileAPI, updateProfileImageAPI, updateUserProfileAPI } from "../../../api/userApi"
 import { toast } from "react-toastify"
 
@@ -28,17 +28,17 @@ export default function ProfilePage() {
     email: "",
     phone: "",
     profile_image: "",
-    location: "", 
-    bio: ""       
+    location: "",
+    bio: ""
   })
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         let response = null;
-        
+
         if (userID) {
-          response = await getUserProfileAPI(userID) 
+          response = await getUserProfileAPI(userID)
         } else {
           response = await getUserProfileAPI()
         }
@@ -91,7 +91,7 @@ export default function ProfilePage() {
           setFormData((prev) => ({ ...prev, profile_image: fileData.secure_url }))
           toast.success("Profile photo updated!")
 
-          
+
           if (!isChatUser) {
             const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
             currentUser.profile_image = fileData.secure_url;
@@ -116,8 +116,8 @@ export default function ProfilePage() {
         full_name: formData.full_name,
         phone: formData.phone,
         username: formData.username,
-        location: formData.location, 
-        bio: formData.bio            
+        location: formData.location,
+        bio: formData.bio
       }
 
       const response = await updateUserProfileAPI(payload)
@@ -125,7 +125,7 @@ export default function ProfilePage() {
       if (response.success) {
         toast.success("Profile updated successfully!")
 
-        
+
         const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
         sessionStorage.setItem("user", JSON.stringify({ ...currentUser, ...response.user }));
 

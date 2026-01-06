@@ -29,12 +29,12 @@ export function LoginForm({ onRegisterClick }) {
       const res = await loginUser({ email, password })
 
       if (res && res.status === 200) {
-        toast.success(res.data.message || "Login successful!")
+        toast.success(res?.data?.message || "Login successful!")
         setEmail("")
         setPassword("")
         navigate("/chats");
       } else {
-        toast.error(res.data.message || "Login failed. Please try again.")
+        toast.error(res?.data?.message || "Login failed. Please try again.")
       }
     } catch (error) {
       console.error("Login failed:", error)

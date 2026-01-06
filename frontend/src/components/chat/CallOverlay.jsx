@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCall } from '../../context/CallContext';
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Loader2 } from 'lucide-react'; 
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,7 +18,7 @@ export function CallOverlay() {
         answerCall,
         isReceivingCall,
         isVideo,
-        isCalling 
+        isCalling
     } = useCall();
 
     const [isMuted, setIsMuted] = useState(false);
@@ -28,7 +28,7 @@ export function CallOverlay() {
         if (myVideo.current && stream) {
             myVideo.current.srcObject = stream;
         }
-    }, [myVideo, stream, isCalling, callAccepted]); 
+    }, [myVideo, stream, isCalling, callAccepted]);
 
     useEffect(() => {
         if (userVideo.current && remoteStream) {
@@ -43,14 +43,17 @@ export function CallOverlay() {
         }
     };
 
-    if (stream && stream.getVideoTracks().length > 0) {
-        stream.getVideoTracks()[0].enabled = !stream.getVideoTracks()[0].enabled;
-        setIsVideoOff(!isVideoOff);
-    } else {
-        console.warn("No video track to toggle");
-    }
+    // 👇 FIX: This logic must be inside a function, not floating in the body!
+    const toggleVideo = () => {
+        if (stream && stream.getVideoTracks().length > 0) {
+            stream.getVideoTracks()[0].enabled = !stream.getVideoTracks()[0].enabled;
+            setIsVideoOff(!isVideoOff);
+        } else {
+            console.warn("No video track to toggle");
+        }
+    };
 
-    
+    // 1. Incoming Call Popup
     if (isReceivingCall && !callAccepted) {
         return (
             <AnimatePresence>
@@ -79,8 +82,7 @@ export function CallOverlay() {
         );
     }
 
-    
-    
+    // 2. Active Call UI
     if ((callAccepted || isCalling) && !callEnded) {
         return (
             <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center">
@@ -121,7 +123,7 @@ export function CallOverlay() {
                     )}
                 </div>
 
-                {/* My Video (Small PIP) - Show during calling too so I can see myself */}
+                {/* My Video (Small PIP) */}
                 {isVideo && (
                     <motion.div
                         drag
@@ -138,12 +140,13 @@ export function CallOverlay() {
                         {isMuted ? <MicOff /> : <Mic />}
                     </Button>
 
+                    {/* Only show video toggle if it's actually a video call */}
                     {isVideo && (
                         <Button
                             size="icon"
                             variant="ghost"
                             className={`rounded-full h-12 w-12 ${isVideoOff ? 'bg-red-500/20 text-red-500' : 'text-white hover:bg-white/20'}`}
-                            onClick={toggleVideo}
+                            onClick={toggleVideo} // 👈 Calls the function now
                         >
                             {isVideoOff ? <VideoOff /> : <Video />}
                         </Button>

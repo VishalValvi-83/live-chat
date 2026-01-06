@@ -17,7 +17,6 @@ export const registerUser = async (payload) => {
 export const loginUser = async (payload) => {
     try {
         const response = await api.post("/auth/login", payload)
-        console.log("login response : ", response)
         if (response && response?.status === 200) {
             sessionStorage.setItem("user", JSON.stringify(response?.data?.data))
             sessionStorage.setItem("authToken", response?.data?.token)
